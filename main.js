@@ -7,7 +7,7 @@ class LamitiShop {
         this.currentUser = JSON.parse(localStorage.getItem('lamiti-user')) || null;
         this.isAdmin = false;
         
-        // Catégories et images
+        // Load categories from localStorage or use defaults
         const savedCategories = localStorage.getItem('lamiti-categories');
         const savedSubcategories = localStorage.getItem('lamiti-subcategories');
         const savedCategoryImages = localStorage.getItem('lamiti-category-images');
@@ -21,14 +21,10 @@ class LamitiShop {
         
         this.categoryImages = savedCategoryImages ? JSON.parse(savedCategoryImages) : {};
         
-        // Gestionnaire Supabase
-        this.supabaseManager = null;
-        this.isOnline = navigator.onLine;
-        
         this.init();
     }
 
-    async init() {
+    init() {
         this.loadProducts();
         this.initializeAnimations();
         this.bindEvents();
@@ -36,220 +32,291 @@ class LamitiShop {
         this.initializeAdmin();
         this.initializeRealTimeUpdates();
         this.optimizeForMobile();
+        
+        // Initialize order tracking
         this.initializeOrderTracking();
-        
-        // Initialiser Supabase
-        await this.initializeSupabase();
-        
-        // Écouter les changements de connexion
-        window.addEventListener('online', () => this.handleOnlineStatus(true));
-        window.addEventListener('offline', () => this.handleOnlineStatus(false));
-        
-        // Synchroniser les données locales avec Supabase
-        this.scheduleSync();
     }
 
-    async initializeSupabase() {
-        try {
-            // Vérifier si Supabase est chargé
-            if (typeof supabase === 'undefined') {
-                console.warn('Supabase non chargé, chargement du script...');
-                await this.loadSupabaseScript();
+    // Product Management
+    loadProducts() {
+        const defaultProducts = [
+            {
+                id: 'prod1',
+                name: 'Sac en Cuir Noir',
+                category: 'accessoires',
+                subcategory: 'sacs',
+                price: 129000,
+                originalPrice: 159000,
+                images: ['https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'],
+                description: 'Sac en cuir véritable avec finitions impeccables. Parfait pour un usage quotidien.',
+                sizes: ['Unique'],
+                colors: ['Noir', 'Marron'],
+                stock: 15,
+                featured: true,
+                onSale: true,
+                active: true,
+                addedAt: new Date('2024-01-15').toISOString()
+            },
+            {
+                id: 'prod2',
+                name: 'Blazer Femme Élégant',
+                category: 'femmes',
+                subcategory: 'vestes',
+                price: 89000,
+                originalPrice: 89000,
+                images: ['https://images.unsplash.com/photo-1595777457583-95e059d581b8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'],
+                description: 'Blazer tailleur parfait pour le bureau ou les occasions spéciales.',
+                sizes: ['XS', 'S', 'M', 'L', 'XL'],
+                colors: ['Beige', 'Noir', 'Gris'],
+                stock: 25,
+                featured: true,
+                onSale: false,
+                active: true,
+                addedAt: new Date('2024-01-20').toISOString()
+            },
+            {
+                id: 'prod3',
+                name: 'Montre de Luxe',
+                category: 'accessoires',
+                subcategory: 'montres',
+                price: 299000,
+                originalPrice: 350000,
+                images: ['https://images.unsplash.com/photo-1523170335258-f5ed11844a49?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'],
+                description: 'Montre suisse avec mouvement automatique et bracelet en cuir.',
+                sizes: ['Unique'],
+                colors: ['Or', 'Argent'],
+                stock: 8,
+                featured: false,
+                onSale: true,
+                active: true,
+                addedAt: new Date('2024-02-01').toISOString()
+            },
+            {
+                id: 'prod4',
+                name: 'Lunettes de Soleil Design',
+                category: 'accessoires',
+                subcategory: 'lunettes',
+                price: 45000,
+                originalPrice: 45000,
+                images: ['https://images.unsplash.com/photo-1572635196237-14b3f281503f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'],
+                description: 'Lunettes UV400 avec design moderne et protection maximale.',
+                sizes: ['Unique'],
+                colors: ['Noir', 'Marron', 'Or'],
+                stock: 30,
+                featured: false,
+                onSale: false,
+                active: true,
+                addedAt: new Date('2024-02-10').toISOString()
+            },
+            {
+                id: 'prod5',
+                name: 'Robe Soirée Élégante',
+                category: 'femmes',
+                subcategory: 'robes',
+                price: 185000,
+                originalPrice: 220000,
+                images: ['https://images.unsplash.com/photo-1595777457583-95e059d581b8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'],
+                description: 'Robe de soirée en soie avec détails raffinés.',
+                sizes: ['XS', 'S', 'M', 'L'],
+                colors: ['Noir', 'Rouge', 'Bleu'],
+                stock: 12,
+                featured: true,
+                onSale: true,
+                active: true,
+                addedAt: new Date('2024-02-15').toISOString()
+            },
+            {
+                id: 'prod6',
+                name: 'Chemise Homme Classique',
+                category: 'hommes',
+                subcategory: 'chemises',
+                price: 65000,
+                originalPrice: 65000,
+                images: ['https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'],
+                description: 'Chemise en coton premium avec coupe ajustée.',
+                sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+                colors: ['Blanc', 'Bleu', 'Gris'],
+                stock: 20,
+                featured: false,
+                onSale: false,
+                active: true,
+                addedAt: new Date('2024-02-20').toISOString()
             }
-            
-            // Initialiser le gestionnaire Supabase
-            if (window.supabaseManager) {
-                this.supabaseManager = window.supabaseManager;
-                console.log('Supabase Manager initialisé');
-                
-                // Charger les données depuis Supabase si en ligne
-                if (this.isOnline) {
-                    await this.loadDataFromSupabase();
-                }
-            } else {
-                console.warn('Supabase Manager non disponible');
-            }
-        } catch (error) {
-            console.error('Erreur d\'initialisation Supabase:', error);
+        ];
+
+        const savedProducts = localStorage.getItem('lamiti-products');
+        this.products = savedProducts ? JSON.parse(savedProducts) : defaultProducts;
+        
+        if (!savedProducts) {
+            localStorage.setItem('lamiti-products', JSON.stringify(this.products));
         }
     }
 
-    loadSupabaseScript() {
-        return new Promise((resolve, reject) => {
-            if (typeof supabase !== 'undefined') {
-                resolve();
-                return;
-            }
-            
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
+    saveProducts() {
+        localStorage.setItem('lamiti-products', JSON.stringify(this.products));
+        this.notifyDataChange();
     }
 
-    async loadDataFromSupabase() {
-        if (!this.supabaseManager || !this.supabaseManager.isConnected) {
-            console.warn('Supabase non connecté');
-            return;
-        }
-
-        try {
-            console.log('Chargement des données depuis Supabase...');
-            
-            // Charger les produits
-            const supabaseProducts = await this.supabaseManager.getProducts();
-            if (supabaseProducts && supabaseProducts.length > 0) {
-                // Fusionner avec les produits locaux
-                this.mergeProducts(supabaseProducts);
-                this.saveProducts();
-                console.log(`${supabaseProducts.length} produits chargés depuis Supabase`);
-            }
-            
-            // Charger les catégories
-            const supabaseCategories = await this.supabaseManager.getCategories();
-            if (supabaseCategories && supabaseCategories.length > 0) {
-                this.categories = supabaseCategories.map(cat => cat.name.toLowerCase());
-                this.saveCategories();
-                console.log(`${supabaseCategories.length} catégories chargées depuis Supabase`);
-            }
-            
-            // Charger les commandes (admin seulement)
-            if (this.isAdmin) {
-                const supabaseOrders = await this.supabaseManager.getOrders();
-                if (supabaseOrders && supabaseOrders.length > 0) {
-                    this.mergeOrders(supabaseOrders);
-                    this.saveOrders();
-                    console.log(`${supabaseOrders.length} commandes chargées depuis Supabase`);
-                }
-            }
-            
-            this.notifyDataChange();
-            
-        } catch (error) {
-            console.error('Erreur lors du chargement des données Supabase:', error);
-        }
+    saveOrders() {
+        localStorage.setItem('lamiti-orders', JSON.stringify(this.orders));
+        this.notifyDataChange();
     }
 
-    mergeProducts(supabaseProducts) {
-        // Créer un map des produits locaux par ID
-        const localProductsMap = {};
-        this.products.forEach(product => {
-            localProductsMap[product.id] = product;
-        });
+    // Category Management
+    addCategory(categoryName, subcategories = [], image = null) {
+        const normalizedName = categoryName.trim().toLowerCase();
         
-        // Fusionner avec les produits Supabase
-        supabaseProducts.forEach(supabaseProduct => {
-            if (localProductsMap[supabaseProduct.id]) {
-                // Mettre à jour le produit existant
-                Object.assign(localProductsMap[supabaseProduct.id], supabaseProduct);
-            } else {
-                // Ajouter le nouveau produit
-                this.products.push(supabaseProduct);
-            }
-        });
-        
-        // Trier par date d'ajout
-        this.products.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
-    }
-
-    mergeOrders(supabaseOrders) {
-        // Créer un map des commandes locales par ID
-        const localOrdersMap = {};
-        this.orders.forEach(order => {
-            localOrdersMap[order.id] = order;
-        });
-        
-        // Fusionner avec les commandes Supabase
-        supabaseOrders.forEach(supabaseOrder => {
-            if (localOrdersMap[supabaseOrder.id]) {
-                // Mettre à jour la commande existante
-                const localOrder = localOrdersMap[supabaseOrder.id];
-                
-                // Vérifier si le statut a changé
-                if (localOrder.status !== supabaseOrder.status) {
-                    localOrder.status = supabaseOrder.status;
-                    if (!localOrder.statusHistory) {
-                        localOrder.statusHistory = [];
-                    }
-                    localOrder.statusHistory.push({
-                        status: supabaseOrder.status,
-                        timestamp: new Date().toISOString(),
-                        note: 'Mise à jour depuis Supabase'
-                    });
-                }
-                
-                // Mettre à jour les autres champs
-                Object.assign(localOrder, supabaseOrder);
-            } else {
-                // Ajouter la nouvelle commande
-                this.orders.push(supabaseOrder);
-            }
-        });
-        
-        // Trier par date de commande
-        this.orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
-    }
-
-    async syncDataToSupabase() {
-        if (!this.isOnline || !this.supabaseManager || !this.supabaseManager.isConnected) {
-            console.log('Hors ligne ou Supabase non connecté, synchronisation reportée');
-            return false;
-        }
-
-        try {
-            console.log('Synchronisation des données vers Supabase...');
+        if (!this.categories.includes(normalizedName)) {
+            this.categories.push(normalizedName);
+            this.subcategories[normalizedName] = subcategories;
             
-            // Synchroniser les produits
-            if (this.products.length > 0) {
-                await this.supabaseManager.syncProducts(this.products);
+            // Save category image if provided
+            if (image) {
+                this.categoryImages[normalizedName] = image;
+                this.saveCategoryImages();
             }
             
-            // Synchroniser les commandes
-            if (this.orders.length > 0) {
-                await this.supabaseManager.syncOrders(this.orders);
-            }
-            
-            console.log('Synchronisation terminée avec succès');
+            this.saveCategories();
+            this.showNotification(`Catégorie "${categoryName}" ajoutée avec succès!`, 'success');
             return true;
+        }
+        this.showNotification('Cette catégorie existe déjà!', 'error');
+        return false;
+    }
+
+    deleteCategory(categoryName) {
+        if (this.categories.includes(categoryName)) {
+            // Check if category has products
+            const hasProducts = this.products.some(p => p.category === categoryName);
+            if (hasProducts) {
+                this.showNotification('Impossible de supprimer: cette catégorie contient des produits!', 'error');
+                return false;
+            }
             
-        } catch (error) {
-            console.error('Erreur lors de la synchronisation:', error);
+            this.categories = this.categories.filter(c => c !== categoryName);
+            delete this.subcategories[categoryName];
+            
+            // Remove category image
+            if (this.categoryImages[categoryName]) {
+                delete this.categoryImages[categoryName];
+                this.saveCategoryImages();
+            }
+            
+            this.saveCategories();
+            this.showNotification(`Catégorie "${categoryName}" supprimée avec succès!`, 'info');
+            return true;
+        }
+        return false;
+    }
+
+    saveCategories() {
+        localStorage.setItem('lamiti-categories', JSON.stringify(this.categories));
+        localStorage.setItem('lamiti-subcategories', JSON.stringify(this.subcategories));
+        this.notifyDataChange();
+    }
+
+    saveCategoryImages() {
+        localStorage.setItem('lamiti-category-images', JSON.stringify(this.categoryImages));
+        this.notifyDataChange();
+    }
+
+    // Cart Management
+    addToCart(productId, quantity = 1, size = null, color = null) {
+        const product = this.products.find(p => p.id === productId);
+        if (!product || product.stock < quantity) {
+            this.showNotification('Stock insuffisant!', 'error');
             return false;
         }
-    }
 
-    scheduleSync() {
-        // Synchroniser toutes les 30 secondes si en ligne
-        setInterval(() => {
-            if (this.isOnline) {
-                this.syncDataToSupabase();
-            }
-        }, 30000);
-        
-        // Synchroniser immédiatement au chargement
-        setTimeout(() => {
-            if (this.isOnline) {
-                this.syncDataToSupabase();
-            }
-        }, 5000);
-    }
+        // Check if item already exists in cart
+        const existingItem = this.cart.find(item => 
+            item.productId === productId && 
+            item.size === size && 
+            item.color === color
+        );
 
-    handleOnlineStatus(isOnline) {
-        this.isOnline = isOnline;
-        
-        if (isOnline) {
-            console.log('Connecté en ligne, synchronisation des données...');
-            this.loadDataFromSupabase();
-            this.syncDataToSupabase();
+        if (existingItem) {
+            if (product.stock < existingItem.quantity + quantity) {
+                this.showNotification('Stock insuffisant!', 'error');
+                return false;
+            }
+            existingItem.quantity += quantity;
         } else {
-            console.log('Hors ligne, utilisation des données locales');
+            this.cart.push({
+                productId,
+                quantity,
+                size,
+                color,
+                addedAt: new Date().toISOString()
+            });
+        }
+
+        this.saveCart();
+        this.updateCartBadge();
+        this.showNotification('Article ajouté au panier!', 'success');
+        this.animateAddToCart();
+        
+        // Close any open modals
+        this.closeAllModals();
+        return true;
+    }
+
+    removeFromCart(productId, size = null, color = null) {
+        this.cart = this.cart.filter(item => 
+            !(item.productId === productId && 
+              item.size === size && 
+              item.color === color)
+        );
+        this.saveCart();
+        this.updateCartBadge();
+        this.showNotification('Article retiré du panier', 'info');
+    }
+
+    updateCartQuantity(productId, quantity, size = null, color = null) {
+        const item = this.cart.find(item => 
+            item.productId === productId && 
+            item.size === size && 
+            item.color === color
+        );
+        
+        if (item) {
+            const product = this.products.find(p => p.id === productId);
+            if (product && product.stock >= quantity) {
+                item.quantity = quantity;
+                this.saveCart();
+                this.updateCartBadge();
+                this.updateCartDisplay();
+            } else {
+                this.showNotification('Stock insuffisant!', 'error');
+            }
         }
     }
 
-    // MODIFICATION DE LA MÉTHODE createOrder pour synchroniser avec Supabase
-    async createOrder(customerInfo, shippingAddress, paymentMethod) {
+    saveCart() {
+        localStorage.setItem('lamiti-cart', JSON.stringify(this.cart));
+    }
+
+    updateCartBadge() {
+        const badges = document.querySelectorAll('.cart-badge');
+        const totalItems = this.cart.reduce((sum, item) => sum + item.quantity, 0);
+        
+        badges.forEach(badge => {
+            badge.textContent = totalItems;
+            badge.style.display = totalItems > 0 ? 'flex' : 'none';
+        });
+    }
+
+    updateCartDisplay() {
+        // Update cart page if user is on it
+        if (window.location.pathname.includes('cart.html')) {
+            if (typeof loadCartPage === 'function') {
+                loadCartPage();
+            }
+        }
+    }
+
+    // Order Management - MODIFIÉ avec adminRead
+    createOrder(customerInfo, shippingAddress, paymentMethod) {
         if (this.cart.length === 0) {
             this.showNotification('Votre panier est vide!', 'error');
             return null;
@@ -275,10 +342,10 @@ class LamitiShop {
             trackingCode: this.generateTrackingCode(),
             estimatedDelivery: this.calculateEstimatedDelivery(),
             updates: [],
-            adminRead: false
+            adminRead: false // NOUVEAU: marqué comme non lu par l'admin
         };
 
-        // Mettre à jour le stock
+        // Update stock
         this.cart.forEach(item => {
             const product = this.products.find(p => p.id === item.productId);
             if (product) {
@@ -290,108 +357,230 @@ class LamitiShop {
         this.saveOrders();
         this.saveProducts();
         
-        // Vider le panier
+        // Clear cart
         this.cart = [];
         this.saveCart();
         this.updateCartBadge();
 
-        // Synchroniser avec Supabase si en ligne
-        if (this.isOnline && this.supabaseManager) {
-            try {
-                await this.supabaseManager.createOrder(order);
-            } catch (error) {
-                console.error('Erreur lors de la synchronisation de la commande:', error);
-                // Stocker la commande pour synchronisation ultérieure
-                this.queueOrderForSync(order);
-            }
-        } else {
-            // Stocker pour synchronisation ultérieure
-            this.queueOrderForSync(order);
-        }
-
-        // Envoyer confirmation email
+        // Send confirmation email simulation
         this.sendOrderConfirmation(order);
 
-        // Déclencher notification admin
+        // Trigger admin notification avec son continu
         this.triggerAdminNotification(order);
 
-        // Stocker référence client
+        // Store customer order reference
         this.storeCustomerOrder(order.customer.email, orderId);
 
         return order;
     }
 
-    queueOrderForSync(order) {
-        let pendingSync = JSON.parse(localStorage.getItem('lamiti-pending-sync') || '[]');
-        pendingSync.push({
-            type: 'order',
-            data: order,
-            timestamp: new Date().toISOString()
-        });
-        localStorage.setItem('lamiti-pending-sync', JSON.stringify(pendingSync));
+    storeCustomerOrder(email, orderId) {
+        let customerOrders = JSON.parse(localStorage.getItem('lamiti-customer-orders') || '{}');
+        if (!customerOrders[email]) {
+            customerOrders[email] = [];
+        }
+        if (!customerOrders[email].includes(orderId)) {
+            customerOrders[email].push(orderId);
+            localStorage.setItem('lamiti-customer-orders', JSON.stringify(customerOrders));
+        }
     }
 
-    // MODIFICATION DE updateOrderStatus pour synchroniser avec Supabase
-    async updateOrderStatus(orderId, newStatus, note = null) {
+    generateTrackingCode() {
+        return 'TRK-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    }
+
+    calculateEstimatedDelivery() {
+        const deliveryDate = new Date();
+        deliveryDate.setDate(deliveryDate.getDate() + 3); // 3 days delivery
+        return deliveryDate.toISOString();
+    }
+
+    calculateTotal() {
+        return this.cart.reduce((total, item) => {
+            const product = this.products.find(p => p.id === item.productId);
+            return total + (product ? product.price * item.quantity : 0);
+        }, 0);
+    }
+
+    // Updated order status management
+    updateOrderStatus(orderId, newStatus, note = null) {
         const order = this.orders.find(o => o.id === orderId);
-        if (!order) return false;
-
-        const oldStatus = order.status;
-        order.status = newStatus;
-        
-        if (!order.statusHistory) {
-            order.statusHistory = [];
-        }
-        
-        order.statusHistory.push({
-            status: newStatus,
-            timestamp: new Date().toISOString(),
-            note: note || `Statut changé de "${this.getStatusLabel(oldStatus)}" à "${this.getStatusLabel(newStatus)}"`
-        });
-        
-        order.lastUpdate = new Date().toISOString();
-        this.saveOrders();
-        
-        // Synchroniser avec Supabase si en ligne
-        if (this.isOnline && this.supabaseManager) {
-            try {
-                await this.supabaseManager.updateOrderStatus(orderId, newStatus, note);
-            } catch (error) {
-                console.error('Erreur lors de la synchronisation du statut:', error);
-                this.queueStatusUpdateForSync(orderId, newStatus, note);
+        if (order) {
+            const oldStatus = order.status;
+            order.status = newStatus;
+            
+            // Add to status history
+            if (!order.statusHistory) {
+                order.statusHistory = [];
             }
-        } else {
-            this.queueStatusUpdateForSync(orderId, newStatus, note);
+            
+            order.statusHistory.push({
+                status: newStatus,
+                timestamp: new Date().toISOString(),
+                note: note || `Statut changé de "${this.getStatusLabel(oldStatus)}" à "${this.getStatusLabel(newStatus)}"`
+            });
+            
+            order.lastUpdate = new Date().toISOString();
+            this.saveOrders();
+            
+            // Add to updates for real-time notification
+            order.updates = order.updates || [];
+            order.updates.push({
+                type: 'status_change',
+                oldStatus: oldStatus,
+                newStatus: newStatus,
+                timestamp: new Date().toISOString(),
+                message: note || `Votre commande est maintenant "${this.getStatusLabel(newStatus)}"`
+            });
+            
+            // Notify customer
+            this.sendStatusUpdateNotification(order);
+            
+            return true;
+        }
+        return false;
+    }
+
+    getOrderByTrackingCode(trackingCode) {
+        return this.orders.find(o => o.trackingCode === trackingCode);
+    }
+
+    getCustomerOrders(email) {
+        const customerOrders = JSON.parse(localStorage.getItem('lamiti-customer-orders') || '{}');
+        const orderIds = customerOrders[email] || [];
+        
+        return this.orders.filter(order => orderIds.includes(order.id));
+    }
+
+    // Order tracking system
+    initializeOrderTracking() {
+        // Check for order updates every 5 seconds
+        setInterval(() => {
+            this.checkOrderUpdates();
+        }, 5000);
+    }
+
+    checkOrderUpdates() {
+        const currentUserEmail = this.currentUser?.email;
+        if (!currentUserEmail) return;
+        
+        const customerOrders = this.getCustomerOrders(currentUserEmail);
+        
+        customerOrders.forEach(order => {
+            // Check if there are new updates
+            if (order.updates && order.updates.length > 0) {
+                const lastSeenUpdate = localStorage.getItem(`lamiti-last-update-${order.id}`) || 0;
+                const newUpdates = order.updates.filter(update => 
+                    new Date(update.timestamp).getTime() > lastSeenUpdate
+                );
+                
+                if (newUpdates.length > 0) {
+                    // Show notification for new updates
+                    newUpdates.forEach(update => {
+                        if (update.type === 'status_change') {
+                            this.showNotification(
+                                `Mise à jour commande ${order.id}: ${update.message}`,
+                                'info'
+                            );
+                        }
+                    });
+                    
+                    // Update last seen
+                    const latestUpdate = order.updates[order.updates.length - 1];
+                    localStorage.setItem(`lamiti-last-update-${order.id}`, 
+                        new Date(latestUpdate.timestamp).getTime());
+                }
+            }
+        });
+    }
+
+    getOrderStatusTimeline(orderId) {
+        const order = this.orders.find(o => o.id === orderId);
+        if (!order || !order.statusHistory) return [];
+        
+        return order.statusHistory.sort((a, b) => 
+            new Date(a.timestamp) - new Date(b.timestamp)
+        );
+    }
+
+    getNextStatus(currentStatus) {
+        const statusFlow = {
+            'pending': 'confirmed',
+            'confirmed': 'shipped',
+            'shipped': 'delivered',
+            'delivered': null,
+            'cancelled': null
+        };
+        return statusFlow[currentStatus];
+    }
+
+    getStatusLabel(status) {
+        const labels = {
+            'pending': 'En attente',
+            'confirmed': 'Confirmée',
+            'shipped': 'Expédiée',
+            'delivered': 'Livrée',
+            'cancelled': 'Annulée'
+        };
+        return labels[status] || status;
+    }
+
+    // Trigger admin notification for new order avec son continu
+    triggerAdminNotification(order) {
+        // Dispatch event for admin page
+        const event = new CustomEvent('newOrderCreated', {
+            detail: { order }
+        });
+        document.dispatchEvent(event);
+        
+        // Si l'admin est connecté, déclencher le son immédiatement
+        if (window.adminManager && window.adminManager.isAdmin) {
+            // Le son sera déclenché via l'event listener dans adminManager
+        }
+    }
+
+    // Admin Functions
+    initializeAdmin() {
+        const adminLogin = document.getElementById('admin-login-form');
+        if (adminLogin) {
+            adminLogin.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAdminLogin();
+            });
         }
 
-        // Ajouter aux mises à jour pour notification en temps réel
-        order.updates = order.updates || [];
-        order.updates.push({
-            type: 'status_change',
-            oldStatus: oldStatus,
-            newStatus: newStatus,
-            timestamp: new Date().toISOString(),
-            message: note || `Votre commande est maintenant "${this.getStatusLabel(newStatus)}"`
-        });
-        
-        // Notifier le client
-        this.sendStatusUpdateNotification(order);
-        
-        return true;
+        // Check if admin is already logged in
+        const adminSession = localStorage.getItem('lamiti-admin');
+        if (adminSession) {
+            this.isAdmin = true;
+        }
     }
 
-    queueStatusUpdateForSync(orderId, newStatus, note) {
-        let pendingSync = JSON.parse(localStorage.getItem('lamiti-pending-sync') || '[]');
-        pendingSync.push({
-            type: 'status_update',
-            data: { orderId, newStatus, note },
-            timestamp: new Date().toISOString()
-        });
-        localStorage.setItem('lamiti-pending-sync', JSON.stringify(pendingSync));
+    handleAdminLogin() {
+        const username = document.getElementById('admin-username').value;
+        const password = document.getElementById('admin-password').value;
+
+        // Simple admin authentication (demo)
+        if (username === 'admin' && password === 'lamiti2024') {
+            this.isAdmin = true;
+            localStorage.setItem('lamiti-admin', JSON.stringify({
+                username,
+                loginTime: new Date().toISOString()
+            }));
+            this.showNotification('Connexion admin réussie!', 'success');
+        } else {
+            this.showNotification('Identifiants incorrects!', 'error');
+        }
     }
 
-    // Autres méthodes modifiées pour la synchronisation...
-    async addProduct(productData) {
+    logoutAdmin() {
+        localStorage.removeItem('lamiti-admin');
+        this.isAdmin = false;
+        location.reload();
+    }
+
+    // Product CRUD for Admin
+    addProduct(productData) {
         const newProduct = {
             id: 'prod' + Date.now(),
             ...productData,
@@ -400,95 +589,31 @@ class LamitiShop {
         };
         this.products.push(newProduct);
         this.saveProducts();
-        
-        // Synchroniser avec Supabase
-        if (this.isOnline && this.supabaseManager) {
-            try {
-                await this.supabaseManager.syncProducts([newProduct]);
-            } catch (error) {
-                console.error('Erreur lors de la synchronisation du produit:', error);
-            }
-        }
-        
         this.showNotification('Produit ajouté avec succès!', 'success');
         return newProduct;
     }
 
-    async deleteProduct(productId) {
+    updateProduct(productId, updates) {
+        const index = this.products.findIndex(p => p.id === productId);
+        if (index !== -1) {
+            this.products[index] = { ...this.products[index], ...updates };
+            this.saveProducts();
+            this.showNotification('Produit mis à jour!', 'success');
+            return true;
+        }
+        return false;
+    }
+
+    deleteProduct(productId) {
         if (confirm('Êtes-vous sûr de vouloir supprimer ce produit?')) {
             this.products = this.products.filter(p => p.id !== productId);
             this.saveProducts();
-            
-            // Synchroniser avec Supabase
-            if (this.isOnline && this.supabaseManager) {
-                try {
-                    // Pour la suppression, on marque le produit comme inactif dans Supabase
-                    const productToDelete = this.products.find(p => p.id === productId);
-                    if (productToDelete) {
-                        productToDelete.active = false;
-                        await this.supabaseManager.syncProducts([productToDelete]);
-                    }
-                } catch (error) {
-                    console.error('Erreur lors de la synchronisation de la suppression:', error);
-                }
-            }
-            
             this.showNotification('Produit supprimé!', 'info');
             return true;
         }
         return false;
     }
 
-    // Méthode pour traiter les synchronisations en attente
-    async processPendingSync() {
-        if (!this.isOnline || !this.supabaseManager) return;
-        
-        let pendingSync = JSON.parse(localStorage.getItem('lamiti-pending-sync') || '[]');
-        if (pendingSync.length === 0) return;
-        
-        console.log(`Traitement de ${pendingSync.length} éléments en attente de synchronisation...`);
-        
-        const successfulSyncs = [];
-        
-        for (const syncItem of pendingSync) {
-            try {
-                switch (syncItem.type) {
-                    case 'order':
-                        await this.supabaseManager.createOrder(syncItem.data);
-                        successfulSyncs.push(syncItem);
-                        break;
-                    case 'status_update':
-                        await this.supabaseManager.updateOrderStatus(
-                            syncItem.data.orderId,
-                            syncItem.data.newStatus,
-                            syncItem.data.note
-                        );
-                        successfulSyncs.push(syncItem);
-                        break;
-                    case 'product':
-                        await this.supabaseManager.syncProducts([syncItem.data]);
-                        successfulSyncs.push(syncItem);
-                        break;
-                }
-            } catch (error) {
-                console.error(`Erreur lors de la synchronisation de ${syncItem.type}:`, error);
-            }
-        }
-        
-        // Retirer les synchronisations réussies
-        pendingSync = pendingSync.filter(item => 
-            !successfulSyncs.some(success => 
-                success.timestamp === item.timestamp && success.type === item.type
-            )
-        );
-        
-        localStorage.setItem('lamiti-pending-sync', JSON.stringify(pendingSync));
-        
-        if (successfulSyncs.length > 0) {
-            console.log(`${successfulSyncs.length} éléments synchronisés avec succès`);
-            this.showNotification('Données synchronisées avec le serveur', 'success');
-        }
-    }
     toggleProductStatus(productId) {
         const product = this.products.find(p => p.id === productId);
         if (product) {
@@ -1030,14 +1155,46 @@ class LamitiShop {
     }
 }
 
-// Initialisation du shop
+// Initialize the shop when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.shop = new LamitiShop();
-    
-    // Traiter les synchronisations en attente au démarrage
-    setTimeout(() => {
-        if (window.shop && window.shop.processPendingSync) {
-            window.shop.processPendingSync();
-        }
-    }, 3000);
 });
+
+// Utility functions
+function toggleModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.toggle('active');
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Handle escape key for modals
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const activeModals = document.querySelectorAll('.modal-overlay.active');
+        activeModals.forEach(modal => {
+            modal.classList.remove('active');
+        });
+        document.body.style.overflow = 'auto';
+    }
+});
+
+// Close modal when clicking outside
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+        e.target.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+});
+
+// Export for use in other files
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = LamitiShop;
+}
