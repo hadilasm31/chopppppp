@@ -1,0 +1,3103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - LAMITI SHOP</title>
+    <meta name="description" content="Tableau de bord administrateur pour gérer les produits, commandes et statistiques.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Anime.js for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    
+    <!-- ECharts for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-init.js"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+        
+        :root {
+            --primary-color: #1a1a1a;
+            --secondary-color: #f5f5f5;
+            --accent-color: #d4af37;
+            --text-color: #333333;
+            --bg-color: #fafafa;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        /* Admin Login */
+        .admin-login {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #333 100%);
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem;
+            }
+        }
+        
+        .login-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 480px) {
+            .login-title {
+                font-size: 1.5rem;
+            }
+        }
+        
+        .login-subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            text-align: left;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        }
+        
+        .login-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .login-btn:hover {
+            background: #b8941f;
+            transform: translateY(-1px);
+        }
+        
+        /* Admin Dashboard */
+        .admin-dashboard {
+            display: none;
+            min-height: 100vh;
+            background: var(--bg-color);
+        }
+        
+        .admin-header {
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-header {
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+        }
+        
+        .admin-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        @media (max-width: 480px) {
+            .admin-logo {
+                font-size: 1.1rem;
+            }
+        }
+        
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-user {
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+        }
+        
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+        
+        .admin-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 80px);
+        }
+        
+        @media (max-width: 1024px) {
+            .admin-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .admin-sidebar {
+            background: white;
+            border-right: 1px solid #eee;
+            padding: 2rem 1rem;
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+        
+        @media (max-width: 1024px) {
+            .admin-sidebar {
+                display: none;
+                position: fixed;
+                top: 80px;
+                left: 0;
+                width: 100%;
+                height: auto;
+                max-height: calc(100vh - 80px);
+                z-index: 90;
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .admin-sidebar.active {
+                display: block;
+            }
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+        }
+        
+        .sidebar-item {
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-link {
+            display: block;
+            padding: 0.8rem 1rem;
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .admin-main {
+            padding: 1.5rem;
+            overflow-x: hidden;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-main {
+                padding: 1rem;
+            }
+        }
+        
+        .dashboard-section {
+            display: none;
+        }
+        
+        .dashboard-section.active {
+            display: block;
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+            }
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .stat-value {
+                font-size: 1.3rem;
+            }
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* Charts */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .chart {
+            width: 100%;
+            height: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            .chart {
+                height: 250px;
+            }
+        }
+        
+        /* Products Management */
+        .products-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .products-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+        
+        .add-product-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+        
+        .add-product-btn:hover {
+            background: #b8941f;
+            transform: translateY(-1px);
+        }
+        
+        .search-input {
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            min-width: 200px;
+            flex: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .search-input {
+                min-width: auto;
+                width: 100%;
+            }
+        }
+        
+        /* TABLE STRUCTURES - RESPONSIVE */
+        .admin-table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-table {
+                min-width: 600px;
+                font-size: 0.9rem;
+            }
+        }
+        
+        .admin-table thead {
+            background: #f8f9fa;
+        }
+        
+        .admin-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-color);
+            border-bottom: 2px solid #e9ecef;
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-table th {
+                padding: 0.8rem;
+                font-size: 0.85rem;
+            }
+        }
+        
+        .admin-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-table td {
+                padding: 0.8rem;
+                font-size: 0.85rem;
+            }
+        }
+        
+        .admin-table tbody tr {
+            transition: background-color 0.3s ease;
+        }
+        
+        .admin-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .admin-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Table responsive specific styles */
+        @media (max-width: 768px) {
+            .admin-table-container {
+                margin: 0 -1rem;
+                border-radius: 0;
+                width: calc(100% + 2rem);
+            }
+        }
+        
+        /* Table images */
+        .table-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .table-image {
+                width: 40px;
+                height: 40px;
+            }
+        }
+        
+        .table-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Table actions */
+        .table-actions {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .table-actions {
+                gap: 0.2rem;
+            }
+        }
+        
+        .action-btn {
+            padding: 0.4rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.75rem;
+            min-width: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @media (max-width: 768px) {
+            .action-btn {
+                padding: 0.3rem;
+                min-width: 24px;
+                font-size: 0.7rem;
+            }
+        }
+        
+        .edit-btn {
+            background: #3498db;
+            color: white;
+        }
+        
+        .edit-btn:hover {
+            background: #2980b9;
+        }
+        
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+        
+        .toggle-btn {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .toggle-btn.active {
+            background: #27ae60;
+        }
+        
+        /* Customer progress bars */
+        .customer-level {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .level-new {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .level-regular {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .level-premium {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .level-vip {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .progress-bar {
+            width: 80px;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        @media (max-width: 768px) {
+            .progress-bar {
+                width: 60px;
+            }
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+        
+        /* Order Status */
+        .order-status {
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-align: center;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-shipped {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-delivered {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Category Management */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 480px) {
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .category-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .category-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .category-actions {
+            display: flex;
+            gap: 0.3rem;
+        }
+        
+        .category-image {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        
+        .category-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .category-image-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .category-card:hover .category-image-actions {
+            opacity: 1;
+        }
+        
+        .subcategories {
+            margin-top: 1rem;
+        }
+        
+        .subcategory-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin-top: 0.5rem;
+        }
+        
+        .subcategory-tag {
+            background: #f0f0f0;
+            padding: 0.2rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        
+        .subcategory-tag .remove-subcategory {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 0.6rem;
+            padding: 0;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .add-subcategory-form {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .add-subcategory-input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .add-subcategory-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        /* Add Product Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            position: relative;
+            margin: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .modal-content {
+                padding: 1rem;
+                max-height: 95vh;
+                margin: 1rem;
+            }
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .modal-title {
+                font-size: 1.1rem;
+            }
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+            padding: 0.3rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            line-height: 1;
+        }
+        
+        .modal-close:hover {
+            background: #f5f5f5;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+                margin-bottom: 0.8rem;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .form-group {
+                margin-bottom: 0.8rem;
+            }
+        }
+        
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .image-upload {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .image-upload:hover {
+            border-color: var(--accent-color);
+            background: #f8f9fa;
+        }
+        
+        .image-upload.dragover {
+            border-color: var(--accent-color);
+            background: rgba(212, 175, 55, 0.1);
+        }
+        
+        .uploaded-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .uploaded-images {
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+                gap: 0.5rem;
+            }
+        }
+        
+        .uploaded-image {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .uploaded-image img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        /* Order Timeline */
+        .order-timeline {
+            margin: 1.5rem 0;
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1rem;
+            padding-left: 20px;
+        }
+        
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            z-index: 1;
+        }
+        
+        .timeline-item.completed::before {
+            background: var(--accent-color);
+        }
+        
+        .timeline-item.current::before {
+            background: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
+        }
+        
+        .timeline-content {
+            background: #f8f9fa;
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin-top: 0.3rem;
+            font-size: 0.9rem;
+        }
+        
+        .timeline-time {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.2rem;
+        }
+        
+        /* Order Details Modal */
+        .order-details-modal {
+            max-width: 900px;
+        }
+        
+        .order-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .order-info {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+        
+        .order-section {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .order-items {
+            margin-top: 1.5rem;
+        }
+        
+        .order-item {
+            display: flex;
+            gap: 0.8rem;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .order-item-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .order-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Customer Management Stats */
+        .customer-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (max-width: 480px) {
+            .customer-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .customer-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .customer-stat {
+            background: white;
+            padding: 1.2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .customer-stat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+        }
+        
+        .customer-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 0.3rem;
+        }
+        
+        .customer-stat-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Notifications - CORRECTED RESPONSIVE POSITION */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 2001;
+            max-width: 350px;
+            width: calc(100% - 40px);
+        }
+        
+        @media (max-width: 768px) {
+            .notification {
+                top: 80px;
+                right: 10px;
+                left: 10px;
+                max-width: calc(100% - 20px);
+                margin: 0 auto;
+            }
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification-content {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .notification-success {
+            border-left: 4px solid #27ae60;
+        }
+        
+        .notification-error {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .notification-info {
+            border-left: 4px solid #3498db;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        
+        /* Stock Management */
+        .stock-input {
+            width: 50px;
+            padding: 0.3rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .stock-input {
+                width: 40px;
+            }
+        }
+        
+        .update-stock-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 0.3rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        
+        .update-stock-btn:hover {
+            background: #219a52;
+        }
+        
+        /* Notification Bell - CORRECTED RESPONSIVE POSITION */
+        .notification-bell {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .notification-bell {
+                width: 36px;
+                height: 36px;
+                margin-right: 0.3rem;
+            }
+        }
+        
+        .notification-bell:hover {
+            background: #b8941f;
+            transform: scale(1.05);
+        }
+        
+        .notification-bell.ringing {
+            animation: bellRing 1s ease-in-out infinite;
+        }
+        
+        .notification-bell-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.65rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes bellRing {
+            0%, 100% { transform: rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: rotate(-8deg); }
+            20%, 40%, 60%, 80% { transform: rotate(8deg); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Notification Panel - CORRECTED RESPONSIVE POSITION - MODIFIÉ POUR NOTIFICATIONS JAUNES */
+        .notification-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 2002;
+            display: none;
+            transition: all 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .notification-panel {
+                top: 70px;
+                right: 10px;
+                left: 10px;
+                width: calc(100% - 20px);
+                max-width: 400px;
+                margin: 0 auto;
+            }
+        }
+        
+        .notification-panel.show {
+            display: block;
+        }
+        
+        .notification-panel-header {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+        }
+        
+        .notification-panel-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+        
+        .clear-notifications {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .clear-notifications:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        /* Notification items - MODIFIÉ POUR NOTIFICATIONS NON LUES EN JAUNE */
+        .notification-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            position: relative;
+        }
+        
+        .notification-item:hover {
+            background: #f8f9fa;
+        }
+        
+        /* NOUVEAU: Notification non lue - fond jaune */
+        .notification-item.unread {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            border-left: 4px solid #ffc107;
+            box-shadow: inset 0 2px 4px rgba(255, 193, 7, 0.1);
+            animation: pulse-gold 2s infinite;
+        }
+        
+        /* Notification lue - fond normal */
+        .notification-item.read {
+            background: white;
+            border-left: 4px solid #e0e0e0;
+        }
+        
+        @keyframes pulse-gold {
+            0% { box-shadow: inset 0 0 0 0 rgba(255, 193, 7, 0.2); }
+            50% { box-shadow: inset 0 0 0 4px rgba(255, 193, 7, 0); }
+            100% { box-shadow: inset 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+        
+        .notification-item-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* NOUVEAU: Indicateur "non lu" */
+        .notification-item-title .unread-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #ffc107;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .notification-item-time {
+            font-size: 0.7rem;
+            color: #999;
+            white-space: nowrap;
+        }
+        
+        .notification-item-message {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .notification-item-order {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            cursor: pointer;
+            text-decoration: underline;
+            display: inline-block;
+            transition: color 0.3s ease;
+        }
+        
+        .notification-item-order:hover {
+            color: #b8941f;
+        }
+        
+        /* Section des notifications non lues */
+        .notification-section-title {
+            padding: 8px 15px;
+            background: #f8f9fa;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .notification-count-badge {
+            background: #ffc107;
+            color: #856404;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+        
+        /* Bouton de marquage comme lu */
+        .mark-as-read-btn {
+            background: none;
+            border: none;
+            color: #3498db;
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+        
+        .mark-as-read-btn:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        /* Aucune notification */
+        .no-notifications {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+            font-style: italic;
+        }
+        
+        /* Order Timeline Admin */
+        .timeline-track {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 1.5rem 0;
+            position: relative;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .timeline-track {
+                justify-content: center;
+            }
+        }
+        
+        .timeline-track::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #e9ecef;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .timeline-track::before {
+                display: none;
+            }
+        }
+        
+        .timeline-step {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            flex: 1;
+            min-width: 70px;
+        }
+        
+        @media (max-width: 768px) {
+            .timeline-step {
+                flex: 0 0 auto;
+                width: 60px;
+            }
+        }
+        
+        .step-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.3rem;
+            font-size: 0.7rem;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+        
+        .step-circle.active {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .step-circle.completed {
+            background: #28a745;
+            color: white;
+        }
+        
+        .step-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            white-space: nowrap;
+        }
+        
+        .step-label.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        /* Order Update Modal */
+        .status-update-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.8rem;
+            margin: 1rem 0;
+        }
+        
+        @media (max-width: 480px) {
+            .status-update-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .status-btn {
+            padding: 0.7rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .status-btn.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-btn.confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-btn.shipped {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-btn.delivered {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-btn.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .status-btn.active {
+            border: 2px solid var(--primary-color);
+        }
+        
+        /* Mobile Hamburger Menu - MODIFIÉ POUR 3 BARRES VERTES QUI DEVIENNENT X ROUGE */
+        .mobile-hamburger {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-right: 1rem;
+            position: relative;
+            z-index: 1001;
+        }
+        
+        @media (max-width: 1024px) {
+            .mobile-hamburger {
+                display: block;
+            }
+        }
+        
+        .hamburger-icon {
+            width: 30px;
+            height: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .hamburger-icon span {
+            display: block;
+            height: 3px;
+            background: #27ae60; /* Vert par défaut */
+            border-radius: 2px;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform-origin: center;
+        }
+        
+        /* État ouvert - transformation en X rouge */
+        .mobile-hamburger.active .hamburger-icon span:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+            background: #e74c3c; /* Rouge */
+            width: 100%;
+        }
+        
+        .mobile-hamburger.active .hamburger-icon span:nth-child(2) {
+            opacity: 0;
+            transform: scale(0);
+        }
+        
+        .mobile-hamburger.active .hamburger-icon span:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+            background: #e74c3c; /* Rouge */
+            width: 100%;
+        }
+        
+        /* Animation au survol */
+        .mobile-hamburger:hover .hamburger-icon span {
+            transform: scale(1.05);
+        }
+        
+        /* Animation pour l'état ouvert */
+        .mobile-hamburger.active .hamburger-icon {
+            transform: rotate(180deg);
+        }
+        
+        /* Mobile View Adjustments */
+        .mobile-table-view {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-table-view {
+                display: block;
+            }
+            
+            .desktop-table-view {
+                display: none;
+            }
+        }
+        
+        /* Card-based mobile table view */
+        .mobile-table-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .mobile-table-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .mobile-table-row:last-child {
+            border-bottom: none;
+        }
+        
+        .mobile-table-label {
+            font-weight: 600;
+            color: var(--primary-color);
+            min-width: 100px;
+        }
+        
+        .mobile-table-value {
+            text-align: right;
+            flex: 1;
+        }
+        
+        /* Tooltip for small screens */
+        .table-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        
+        .table-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 0.5rem;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+        
+        .table-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Print styles */
+        @media print {
+            .admin-header,
+            .admin-sidebar,
+            .notification-panel,
+            .notification,
+            .modal-overlay,
+            .notification-bell {
+                display: none !important;
+            }
+            
+            .admin-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-main {
+                padding: 0;
+            }
+            
+            .admin-table-container {
+                box-shadow: none;
+                overflow: visible;
+            }
+            
+            .admin-table {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Login -->
+    <div class="admin-login" id="admin-login">
+        <div class="login-container">
+            <h1 class="login-title">Admin LAMITI SHOP</h1>
+            <p class="login-subtitle">Connectez-vous pour accéder au tableau de bord</p>
+            
+            <form class="login-form" id="admin-login-form">
+                <div class="form-group">
+                    <label class="form-label" for="admin-username">Nom d'utilisateur</label>
+                    <input type="text" id="admin-username" class="form-input" placeholder="admin" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="admin-password">Mot de passe</label>
+                    <input type="password" id="admin-password" class="form-input" placeholder="lamiti2024" required>
+                </div>
+                <button type="button" class="login-btn" onclick="adminManager.handleAdminLogin()">Se connecter</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="admin-dashboard">
+        <!-- Header -->
+        <header class="admin-header">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <!-- Mobile Hamburger Menu - MODIFIÉ -->
+                <button class="mobile-hamburger" id="mobile-hamburger" onclick="toggleSidebar()">
+                    <div class="hamburger-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
+                <div class="admin-logo">LAMITI SHOP - Admin</div>
+            </div>
+            <div class="admin-user">
+                <!-- Notification Bell -->
+                <div class="notification-bell" id="notification-bell" onclick="toggleNotificationPanel()">
+                    🔔
+                    <span class="notification-bell-badge" id="notification-count" style="display: none;">0</span>
+                </div>
+                <span style="font-size: 0.9rem; white-space: nowrap;">Administrateur</span>
+                <button class="logout-btn" onclick="adminManager.logout()">Déconnexion</button>
+            </div>
+        </header>
+
+        <!-- Notification Panel -->
+        <div class="notification-panel" id="notification-panel">
+            <div class="notification-panel-header">
+                <h3 class="notification-panel-title">Notifications</h3>
+                <button class="clear-notifications" onclick="clearAllNotifications()">Tout effacer</button>
+            </div>
+            <div id="notifications-list">
+                <!-- Notifications will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Main Container -->
+        <div class="admin-container">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar" id="admin-sidebar">
+                <ul class="sidebar-menu">
+                    <li class="sidebar-item">
+                        <a href="#" class="sidebar-link active" onclick="showSection('dashboard')">
+                            📊 Tableau de bord
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#" class="sidebar-link" onclick="showSection('products')">
+                            🛍️ Produits
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#" class="sidebar-link" onclick="showSection('categories')">
+                            📂 Catégories
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#" class="sidebar-link" onclick="showSection('orders')">
+                            📦 Commandes
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#" class="sidebar-link" onclick="showSection('customers')">
+                            👥 Clients
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#" class="sidebar-link" onclick="showSection('low-stock')">
+                            ⚠️ Stock faible
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#" class="sidebar-link" onclick="showSection('analytics')">
+                            📈 Analytics
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#" class="sidebar-link" onclick="showSection('settings')">
+                            ⚙️ Paramètres
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="admin-main">
+                <!-- Dashboard Section -->
+                <div class="dashboard-section active" id="dashboard-section">
+                    <h1 class="section-title">Tableau de bord</h1>
+                    
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">🛍️</div>
+                            <div class="stat-value" id="total-products">0</div>
+                            <div class="stat-label">Produits</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-value" id="total-orders">0</div>
+                            <div class="stat-label">Commandes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-value" id="total-revenue">0 FCFA</div>
+                            <div class="stat-label">Revenus</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⚠️</div>
+                            <div class="stat-value" id="low-stock-items">0</div>
+                            <div class="stat-label">Stock faible</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⏳</div>
+                            <div class="stat-value" id="pending-orders">0</div>
+                            <div class="stat-label">Commandes en attente</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-value" id="completed-orders">0</div>
+                            <div class="stat-label">Commandes livrées</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="chart-container">
+                        <h3 class="chart-title">Ventes mensuelles</h3>
+                        <div class="chart" id="sales-chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3 class="chart-title">Répartition des catégories</h3>
+                        <div class="chart" id="categories-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Products Section -->
+                <div class="dashboard-section" id="products-section">
+                    <h1 class="section-title">Gestion des produits</h1>
+                    
+                    <div class="products-header">
+                        <input type="text" placeholder="Rechercher des produits..." class="search-input" onkeyup="searchProducts(this.value)">
+                        <button class="add-product-btn" onclick="openAddProductModal()">+ Ajouter un produit</button>
+                    </div>
+                    
+                    <!-- PRODUCTS TABLE - RESPONSIVE -->
+                    <div class="desktop-table-view">
+                        <div class="admin-table-container">
+                            <table class="admin-table" id="products-table">
+                                <thead>
+                                    <tr>
+                                        <th>Image</th>
+                                        <th>Nom</th>
+                                        <th>Catégorie</th>
+                                        <th>Prix</th>
+                                        <th>Stock</th>
+                                        <th>En solde</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="products-table-body">
+                                    <!-- Products will be loaded by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile View -->
+                    <div class="mobile-table-view" id="products-mobile-view">
+                        <!-- Products cards will be loaded by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Categories Section -->
+                <div class="dashboard-section" id="categories-section">
+                    <h1 class="section-title">Gestion des catégories</h1>
+                    
+                    <div class="products-header">
+                        <input type="text" placeholder="Nom de la catégorie..." class="search-input" id="category-name-input">
+                        <button class="add-product-btn" onclick="openAddCategoryModal()">+ Ajouter une catégorie</button>
+                    </div>
+                    
+                    <div class="category-grid" id="categories-grid">
+                        <!-- Categories will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- ORDERS SECTION - RESPONSIVE -->
+                <div class="dashboard-section" id="orders-section">
+                    <h1 class="section-title">Gestion des commandes</h1>
+                    
+                    <div class="products-header">
+                        <input type="text" placeholder="Rechercher une commande..." class="search-input" onkeyup="searchOrders(this.value)">
+                        <select class="form-input" style="width: 200px; min-width: 150px;" onchange="filterOrdersByStatus(this.value)">
+                            <option value="all">Tous les statuts</option>
+                            <option value="pending">En attente</option>
+                            <option value="confirmed">Confirmée</option>
+                            <option value="shipped">Expédiée</option>
+                            <option value="delivered">Livrée</option>
+                            <option value="cancelled">Annulée</option>
+                        </select>
+                    </div>
+                    
+                    <div class="desktop-table-view">
+                        <div class="admin-table-container">
+                            <table class="admin-table" id="orders-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID Commande</th>
+                                        <th>Client</th>
+                                        <th>Date</th>
+                                        <th>Total</th>
+                                        <th>Statut</th>
+                                        <th>Paiement</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-table-body">
+                                    <!-- Orders will be loaded by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile View -->
+                    <div class="mobile-table-view" id="orders-mobile-view">
+                        <!-- Orders cards will be loaded by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- CUSTOMERS SECTION - RESPONSIVE -->
+                <div class="dashboard-section" id="customers-section">
+                    <h1 class="section-title">Gestion des clients</h1>
+                    
+                    <!-- Customer Stats -->
+                    <div class="customer-stats">
+                        <div class="customer-stat">
+                            <div class="customer-stat-value" id="total-customers">0</div>
+                            <div class="customer-stat-label">Clients totaux</div>
+                        </div>
+                        <div class="customer-stat">
+                            <div class="customer-stat-value" id="active-customers">0</div>
+                            <div class="customer-stat-label">Clients actifs</div>
+                        </div>
+                        <div class="customer-stat">
+                            <div class="customer-stat-value" id="avg-order-value">0 FCFA</div>
+                            <div class="customer-stat-label">Valeur moyenne commande</div>
+                        </div>
+                        <div class="customer-stat">
+                            <div class="customer-stat-value" id="repeat-customers">0%</div>
+                            <div class="customer-stat-label">Taux de fidélisation</div>
+                        </div>
+                    </div>
+                    
+                    <div class="products-header">
+                        <input type="text" placeholder="Rechercher un client..." class="search-input" onkeyup="searchCustomers(this.value)">
+                    </div>
+                    
+                    <div class="desktop-table-view">
+                        <div class="admin-table-container">
+                            <table class="admin-table" id="customers-table">
+                                <thead>
+                                    <tr>
+                                        <th>Client</th>
+                                        <th>Email</th>
+                                        <th>Téléphone</th>
+                                        <th>Commandes</th>
+                                        <th>Total dépensé</th>
+                                        <th>Niveau</th>
+                                        <th>Fidélité</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customers-table-body">
+                                    <!-- Customers will be loaded by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile View -->
+                    <div class="mobile-table-view" id="customers-mobile-view">
+                        <!-- Customers cards will be loaded by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Low Stock Section -->
+                <div class="dashboard-section" id="low-stock-section">
+                    <h1 class="section-title">Produits en stock faible</h1>
+                    
+                    <div class="desktop-table-view">
+                        <div class="admin-table-container">
+                            <table class="admin-table" id="low-stock-table">
+                                <thead>
+                                    <tr>
+                                        <th>Image</th>
+                                        <th>Nom</th>
+                                        <th>Catégorie</th>
+                                        <th>Prix</th>
+                                        <th>Stock</th>
+                                        <th>Niveau</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="low-stock-table-body">
+                                    <!-- Low stock products will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile View -->
+                    <div class="mobile-table-view" id="low-stock-mobile-view">
+                        <!-- Low stock cards will be loaded by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div class="dashboard-section" id="analytics-section">
+                    <h1 class="section-title">Analytics détaillées</h1>
+                    
+                    <div class="chart-container">
+                        <h3 class="chart-title">Évolution des ventes</h3>
+                        <div class="chart" id="detailed-sales-chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3 class="chart-title">Performance des produits</h3>
+                        <div class="chart" id="products-performance-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="dashboard-section" id="settings-section">
+                    <h1 class="section-title">Paramètres du site</h1>
+                    
+                    <div class="chart-container">
+                        <h3 class="chart-title">Informations de contact</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" value="hadilasmakadji31@gmail.com" id="site-email">
+                            </div>
+                            <div>
+                                <label class="form-label">Téléphone</label>
+                                <input type="tel" class="form-input" value="+241 77 95 03 88" id="site-phone">
+                            </div>
+                            <div>
+                                <label class="form-label">Adresse</label>
+                                <textarea class="form-input form-textarea" id="site-address">Libreville, Gabon</textarea>
+                            </div>
+                            <button class="add-product-btn" onclick="saveSettings()">Enregistrer les modifications</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal-overlay" id="add-product-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Ajouter un produit</h2>
+                <button class="modal-close" onclick="closeAddProductModal()">&times;</button>
+            </div>
+            
+            <form id="add-product-form" onsubmit="handleAddProduct(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Nom du produit</label>
+                        <input type="text" class="form-input" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Catégorie</label>
+                        <select class="form-input" name="category" required id="product-category-select">
+                            <option value="">Sélectionner une catégorie</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Prix (FCFA)</label>
+                        <input type="number" class="form-input" name="price" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Prix original (FCFA)</label>
+                        <input type="number" class="form-input" name="originalPrice" min="0">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Stock</label>
+                        <input type="number" class="form-input" name="stock" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tailles (séparées par des virgules)</label>
+                        <input type="text" class="form-input" name="sizes" placeholder="S, M, L, XL">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Couleurs (séparées par des virgules)</label>
+                    <input type="text" class="form-input" name="colors" placeholder="Noir, Blanc, Rouge">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-input form-textarea" name="description" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Images du produit</label>
+                    <div class="image-upload" onclick="document.getElementById('image-input').click()">
+                        <div>📷 Cliquez pour ajouter des images</div>
+                        <div style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">
+                            Formats acceptés: JPG, PNG. Taille max: 5MB
+                        </div>
+                    </div>
+                    <input type="file" id="image-input" multiple accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                    <div class="uploaded-images" id="uploaded-images"></div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" name="featured"> Produit vedette
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" name="onSale"> En solde
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="add-product-btn">Ajouter le produit</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div class="modal-overlay" id="add-category-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Ajouter une catégorie</h2>
+                <button class="modal-close" onclick="closeAddCategoryModal()">&times;</button>
+            </div>
+            
+            <form id="add-category-form" onsubmit="handleAddCategory(event)">
+                <div class="form-group">
+                    <label class="form-label">Nom de la catégorie</label>
+                    <input type="text" class="form-input" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Image de la catégorie</label>
+                    <div class="image-upload" onclick="document.getElementById('category-image-input').click()">
+                        <div>📷 Cliquez pour ajouter une image</div>
+                        <div style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">
+                            Formats acceptés: JPG, PNG. Taille max: 5MB
+                        </div>
+                    </div>
+                    <input type="file" id="category-image-input" accept="image/*" style="display: none;" onchange="handleCategoryImageUpload(event)">
+                    <div class="uploaded-images" id="category-uploaded-images"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Sous-catégories (séparées par des virgules)</label>
+                    <input type="text" class="form-input" name="subcategories" placeholder="Sous-cat1, Sous-cat2, Sous-cat3">
+                </div>
+                
+                <button type="submit" class="add-product-btn">Ajouter la catégorie</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal-overlay" id="order-details-modal">
+        <div class="modal-content order-details-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Détails de la commande</h2>
+                <button class="modal-close" onclick="closeOrderDetailsModal()">&times;</button>
+            </div>
+            <div id="order-details-content">
+                <!-- Order details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Order Status Modal -->
+    <div class="modal-overlay" id="update-order-status-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Mettre à jour le statut</h2>
+                <button class="modal-close" onclick="closeUpdateOrderStatusModal()">&times;</button>
+            </div>
+            <div id="update-order-status-content">
+                <!-- Update order status form will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio pour les notifications -->
+    <audio id="notification-sound" preload="auto">
+        <source src="resources/natifmp3.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Audio pour les nouvelles commandes (son continu) -->
+    <audio id="new-order-notification-sound" preload="auto" loop>
+        <source src="https://lasonotheque.org/UPLOAD/aac/0089.aac" type="audio/mpeg">
+    </audio>
+    
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="main.js"></script>
+    <script src="admin.js"></script>
+    
+    <script>
+        // Load settings on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const settings = JSON.parse(localStorage.getItem('lamiti-settings') || '{}');
+            if (settings.email) document.getElementById('site-email').value = settings.email;
+            if (settings.phone) document.getElementById('site-phone').value = settings.phone;
+            if (settings.address) document.getElementById('site-address').value = settings.address;
+            
+            // Initialize notification system
+            initNotificationSystem();
+            
+            // Initialize real-time order updates
+            initRealTimeOrderUpdates();
+            
+            // Initialize mobile views
+            initMobileViews();
+        });
+
+        function saveSettings() {
+            const email = document.getElementById('site-email').value;
+            const phone = document.getElementById('site-phone').value;
+            const address = document.getElementById('site-address').value;
+            
+            // Save to localStorage
+            const settings = { email, phone, address };
+            localStorage.setItem('lamiti-settings', JSON.stringify(settings));
+            
+            window.shop.showNotification('Paramètres enregistrés avec succès!', 'success');
+        }
+
+        function searchProducts(query) {
+            // Implement search functionality
+            console.log('Searching products:', query);
+            adminManager.loadAdminProducts();
+        }
+        
+        function searchOrders(query) {
+            // Implement search functionality
+            console.log('Searching orders:', query);
+            adminManager.loadAdminOrders();
+        }
+        
+        function searchCustomers(query) {
+            // Implement search functionality
+            console.log('Searching customers:', query);
+            adminManager.loadAdminCustomers();
+        }
+        
+        function filterOrdersByStatus(status) {
+            // Implement filter functionality
+            console.log('Filtering orders by status:', status);
+            adminManager.loadAdminOrders();
+        }
+        
+        // Notification System
+        let notifications = [];
+        let notificationSound = null;
+        let isNotificationPanelOpen = false;
+        let notificationCheckInterval = null;
+        let orderUpdateInterval = null;
+        
+        function initNotificationSystem() {
+            // Load existing notifications
+            notifications = JSON.parse(localStorage.getItem('lamiti-notifications') || '[]');
+            updateNotificationBadge();
+            
+            // Initialize audio
+            notificationSound = document.getElementById('notification-sound');
+            if (notificationSound) {
+                notificationSound.volume = 0.5;
+                // Précharger le son
+                notificationSound.load();
+            }
+            
+            // Start checking for new orders
+            startOrderCheck();
+        }
+        
+        function startOrderCheck() {
+            // Check for new orders every 5 seconds
+            notificationCheckInterval = setInterval(checkForNewOrders, 5000);
+            
+            // Check immediately on page load
+            checkForNewOrders();
+        }
+        
+        function checkForNewOrders() {
+            if (!window.shop || !window.shop.isAdmin) return;
+            
+            const orders = window.shop.orders || [];
+            const lastCheckTime = localStorage.getItem('lamiti-last-order-check') || 0;
+            
+            // Find new orders since last check
+            const newOrders = orders.filter(order => {
+                const orderTime = new Date(order.orderDate).getTime();
+                return orderTime > lastCheckTime && order.status === 'pending';
+            });
+            
+            // Add notifications for new orders
+            newOrders.forEach(order => {
+                addNotification({
+                    type: 'new_order',
+                    title: 'Nouvelle commande!',
+                    message: `Nouvelle commande de ${order.customer.firstName} ${order.customer.lastName}`,
+                    orderId: order.id,
+                    orderTotal: order.total,
+                    timestamp: new Date().toISOString(),
+                    read: false
+                });
+                
+                // Play notification sound
+                playNotificationSound();
+            });
+            
+            // Update last check time
+            if (orders.length > 0) {
+                const latestOrder = orders[orders.length - 1];
+                localStorage.setItem('lamiti-last-order-check', new Date(latestOrder.orderDate).getTime());
+            }
+        }
+        
+        function initRealTimeOrderUpdates() {
+            // Check for order status updates every 3 seconds
+            orderUpdateInterval = setInterval(checkOrderStatusUpdates, 3000);
+        }
+        
+        function checkOrderStatusUpdates() {
+            if (!window.shop) return;
+            
+            // Load orders with status updates
+            const updatedOrders = JSON.parse(localStorage.getItem('lamiti-updated-orders') || '[]');
+            
+            updatedOrders.forEach(updatedOrder => {
+                const existingOrder = window.shop.orders.find(o => o.id === updatedOrder.id);
+                
+                if (existingOrder && existingOrder.status !== updatedOrder.status) {
+                    // Order status changed, show notification
+                    addNotification({
+                        type: 'order_update',
+                        title: 'Mise à jour de commande',
+                        message: `La commande ${updatedOrder.id} est maintenant "${getStatusLabel(updatedOrder.status)}"`,
+                        orderId: updatedOrder.id,
+                        orderStatus: updatedOrder.status,
+                        timestamp: new Date().toISOString(),
+                        read: false
+                    });
+                    
+                    // Update order in shop
+                    existingOrder.status = updatedOrder.status;
+                    existingOrder.statusHistory = updatedOrder.statusHistory;
+                }
+            });
+            
+            // Clear processed updates
+            localStorage.setItem('lamiti-updated-orders', JSON.stringify([]));
+        }
+        
+        function addNotification(notification) {
+            // Add notification to array
+            notifications.unshift(notification);
+            
+            // Keep only last 50 notifications
+            if (notifications.length > 50) {
+                notifications = notifications.slice(0, 50);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('lamiti-notifications', JSON.stringify(notifications));
+            
+            // Update UI
+            updateNotificationBadge();
+            updateNotificationPanel();
+            
+            // Start bell animation
+            startBellAnimation();
+            
+            // Play sound for new notifications
+            if (!notification.read) {
+                playNotificationSound();
+            }
+        }
+        
+        function playNotificationSound() {
+            if (notificationSound) {
+                notificationSound.currentTime = 0;
+                notificationSound.play().catch(e => {
+                    console.log('Audio playback failed:', e);
+                });
+            }
+        }
+        
+        function startBellAnimation() {
+            const bell = document.getElementById('notification-bell');
+            if (bell) {
+                bell.classList.add('ringing');
+                
+                // Stop animation after 3 seconds
+                setTimeout(() => {
+                    bell.classList.remove('ringing');
+                }, 3000);
+            }
+        }
+        
+        function updateNotificationBadge() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notification-count');
+            const bell = document.getElementById('notification-bell');
+            
+            if (badge) {
+                badge.textContent = unreadCount;
+                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            }
+            
+            if (bell) {
+                if (unreadCount > 0 && !isNotificationPanelOpen) {
+                    bell.classList.add('ringing');
+                } else {
+                    bell.classList.remove('ringing');
+                }
+            }
+        }
+        
+        function updateNotificationPanel() {
+            const container = document.getElementById('notifications-list');
+            if (!container) return;
+            
+            const unreadNotifications = notifications.filter(n => !n.read);
+            const readNotifications = notifications.filter(n => n.read);
+            
+            let html = '';
+            
+            // Show unread notifications first with yellow background
+            if (unreadNotifications.length > 0) {
+                html += `
+                    <div class="notification-section-title">
+                        <span>Nouvelles notifications</span>
+                        <span class="notification-count-badge">${unreadNotifications.length}</span>
+                    </div>
+                `;
+                
+                unreadNotifications.forEach((notification, index) => {
+                    html += createNotificationHTML(notification, index, true);
+                });
+            }
+            
+            // Show read notifications with normal background
+            if (readNotifications.length > 0) {
+                if (unreadNotifications.length > 0) {
+                    html += `
+                        <div class="notification-section-title" style="margin-top: 10px;">
+                            <span>Anciennes notifications</span>
+                        </div>
+                    `;
+                }
+                
+                readNotifications.forEach((notification, index) => {
+                    html += createNotificationHTML(notification, index + unreadNotifications.length, false);
+                });
+            }
+            
+            if (notifications.length === 0) {
+                html = `
+                    <div class="no-notifications">
+                        Aucune notification
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function createNotificationHTML(notification, index, isUnread) {
+            const timeAgo = getTimeAgo(notification.timestamp);
+            const orderLink = notification.orderId ? 
+                `<span class="notification-item-order" onclick="viewOrderFromNotification('${notification.orderId}')">
+                    Voir la commande
+                </span>` : '';
+            
+            const unreadClass = isUnread ? 'unread' : 'read';
+            const unreadIndicator = isUnread ? '<span class="unread-indicator"></span>' : '';
+            
+            return `
+                <div class="notification-item ${unreadClass}" onclick="markNotificationAsRead(${index})">
+                    <div class="notification-item-title">
+                        <span>${unreadIndicator}${notification.title}</span>
+                        <span class="notification-item-time">${timeAgo}</span>
+                    </div>
+                    <div class="notification-item-message">${notification.message}</div>
+                    ${orderLink}
+                    ${isUnread ? `<button class="mark-as-read-btn" onclick="event.stopPropagation(); markNotificationAsRead(${index})">Marquer comme lu</button>` : ''}
+                </div>
+            `;
+        }
+        
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const past = new Date(timestamp);
+            const diffMs = now - past;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return "À l'instant";
+            if (diffMins < 60) return `Il y a ${diffMins} min`;
+            if (diffHours < 24) return `Il y a ${diffHours} h`;
+            if (diffDays < 7) return `Il y a ${diffDays} j`;
+            return past.toLocaleDateString('fr-FR');
+        }
+        
+        function toggleNotificationPanel() {
+            const panel = document.getElementById('notification-panel');
+            const bell = document.getElementById('notification-bell');
+            
+            if (panel.classList.contains('show')) {
+                panel.classList.remove('show');
+                isNotificationPanelOpen = false;
+            } else {
+                panel.classList.add('show');
+                isNotificationPanelOpen = true;
+                
+                // Update panel when opening
+                updateNotificationPanel();
+                
+                // Stop bell animation
+                if (bell) {
+                    bell.classList.remove('ringing');
+                }
+            }
+        }
+        
+        function markNotificationAsRead(index) {
+            if (notifications[index]) {
+                notifications[index].read = true;
+                localStorage.setItem('lamiti-notifications', JSON.stringify(notifications));
+                updateNotificationBadge();
+                updateNotificationPanel();
+                
+                // Also mark order as read if it's an order notification
+                if (notifications[index].orderId && window.adminManager) {
+                    window.adminManager.markOrderAsRead(notifications[index].orderId);
+                }
+            }
+        }
+        
+        function markAllNotificationsAsRead() {
+            notifications.forEach(notification => {
+                notification.read = true;
+            });
+            localStorage.setItem('lamiti-notifications', JSON.stringify(notifications));
+            updateNotificationBadge();
+            updateNotificationPanel();
+            
+            // Also mark all orders as read
+            if (window.adminManager && window.shop) {
+                window.shop.orders.forEach(order => {
+                    window.adminManager.updateOrderReadStatus(order.id, true);
+                });
+            }
+        }
+        
+        function clearAllNotifications() {
+            if (confirm('Êtes-vous sûr de vouloir effacer toutes les notifications ?')) {
+                notifications = [];
+                localStorage.setItem('lamiti-notifications', JSON.stringify(notifications));
+                updateNotificationBadge();
+                updateNotificationPanel();
+            }
+        }
+        
+        function viewOrderFromNotification(orderId) {
+            // Close notification panel
+            toggleNotificationPanel();
+            
+            // Show orders section
+            showSection('orders');
+            
+            // Find and highlight the order
+            setTimeout(() => {
+                const orderRow = document.querySelector(`[data-order-id="${orderId}"]`);
+                if (orderRow) {
+                    // Scroll to the order
+                    orderRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Highlight the order
+                    orderRow.style.backgroundColor = '#fff3cd';
+                    setTimeout(() => {
+                        orderRow.style.backgroundColor = '';
+                    }, 3000);
+                    
+                    // Open order details
+                    viewOrderDetails(orderId);
+                } else {
+                    // If order not found in current view, reload orders
+                    adminManager.loadAdminOrders();
+                    setTimeout(() => {
+                        viewOrderFromNotification(orderId);
+                    }, 500);
+                }
+            }, 500);
+        }
+        
+        // Close notification panel when clicking outside
+        document.addEventListener('click', function(event) {
+            const panel = document.getElementById('notification-panel');
+            const bell = document.getElementById('notification-bell');
+            
+            if (panel && panel.classList.contains('show') && 
+                !panel.contains(event.target) && 
+                !bell.contains(event.target)) {
+                panel.classList.remove('show');
+                isNotificationPanelOpen = false;
+            }
+        });
+        
+        // Stop notification check when leaving admin
+        window.addEventListener('beforeunload', function() {
+            if (notificationCheckInterval) {
+                clearInterval(notificationCheckInterval);
+            }
+            if (orderUpdateInterval) {
+                clearInterval(orderUpdateInterval);
+            }
+        });
+        
+        // Order status update functions
+        function openUpdateOrderStatusModal(orderId) {
+            const order = window.shop.orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const content = `
+                <h3 class="mb-4" style="font-size: 1.1rem;">Mettre à jour le statut de la commande ${order.id}</h3>
+                <div class="timeline-track mb-6">
+                    <div class="timeline-step">
+                        <div class="step-circle ${getStatusCircleClass(order.status, 'pending')}">1</div>
+                        <div class="step-label ${order.status === 'pending' ? 'active' : ''}">En attente</div>
+                    </div>
+                    <div class="timeline-step">
+                        <div class="step-circle ${getStatusCircleClass(order.status, 'confirmed')}">2</div>
+                        <div class="step-label ${order.status === 'confirmed' ? 'active' : ''}">Confirmée</div>
+                    </div>
+                    <div class="timeline-step">
+                        <div class="step-circle ${getStatusCircleClass(order.status, 'shipped')}">3</div>
+                        <div class="step-label ${order.status === 'shipped' ? 'active' : ''}">Expédiée</div>
+                    </div>
+                    <div class="timeline-step">
+                        <div class="step-circle ${getStatusCircleClass(order.status, 'delivered')}">4</div>
+                        <div class="step-label ${order.status === 'delivered' ? 'active' : ''}">Livrée</div>
+                    </div>
+                </div>
+                
+                <div class="status-update-buttons">
+                    <button class="status-btn pending ${order.status === 'pending' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'pending')">
+                        En attente
+                    </button>
+                    <button class="status-btn confirmed ${order.status === 'confirmed' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'confirmed')">
+                        Confirmée
+                    </button>
+                    <button class="status-btn shipped ${order.status === 'shipped' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'shipped')">
+                        Expédiée
+                    </button>
+                    <button class="status-btn delivered ${order.status === 'delivered' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'delivered')">
+                        Livrée
+                    </button>
+                    <button class="status-btn cancelled ${order.status === 'cancelled' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'cancelled')">
+                        Annulée
+                    </button>
+                </div>
+                
+                <div class="mt-4">
+                    <h4 style="font-size: 1rem;">Historique des statuts:</h4>
+                    <div id="status-history-${orderId}" class="mt-2 space-y-2" style="font-size: 0.9rem;">
+                        ${order.statusHistory ? order.statusHistory.map(history => `
+                            <div class="text-sm">
+                                <span class="font-semibold">${getStatusLabel(history.status)}</span>
+                                <span class="text-gray-600"> - ${new Date(history.timestamp).toLocaleString('fr-FR')}</span>
+                                ${history.note ? `<div class="text-gray-500">${history.note}</div>` : ''}
+                            </div>
+                        `).join('') : '<div class="text-gray-500">Aucun historique disponible</div>'}
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="form-label">Ajouter une note (optionnel)</label>
+                    <textarea id="status-note-${orderId}" class="form-input form-textarea" placeholder="Ajouter une note pour ce changement de statut..."></textarea>
+                </div>
+                
+                <div class="mt-6 flex gap-2 flex-wrap">
+                    <button class="add-product-btn flex-1" onclick="saveOrderStatus('${orderId}')">
+                        Enregistrer
+                    </button>
+                    <button class="add-product-btn bg-gray-600 hover:bg-gray-700 flex-1" onclick="closeUpdateOrderStatusModal()">
+                        Annuler
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('update-order-status-content').innerHTML = content;
+            document.getElementById('update-order-status-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeUpdateOrderStatusModal() {
+            document.getElementById('update-order-status-modal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function updateOrderStatus(orderId, newStatus) {
+            // This is just for UI preview, actual save happens in saveOrderStatus
+            const buttons = document.querySelectorAll('.status-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            const activeBtn = document.querySelector(`.status-btn.${newStatus}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+        
+        function saveOrderStatus(orderId) {
+            const newStatus = document.querySelector('.status-btn.active')?.classList[1];
+            const note = document.getElementById(`status-note-${orderId}`)?.value;
+            
+            if (!newStatus) {
+                window.shop.showNotification('Veuillez sélectionner un statut', 'error');
+                return;
+            }
+            
+            // Update order status
+            if (window.shop.updateOrderStatus(orderId, newStatus, note)) {
+                closeUpdateOrderStatusModal();
+                
+                // Notify customer about status change
+                notifyCustomerOrderUpdate(orderId, newStatus);
+                
+                // Reload orders
+                adminManager.loadAdminOrders();
+                
+                window.shop.showNotification(`Statut mis à jour: ${getStatusLabel(newStatus)}`, 'success');
+            }
+        }
+        
+        function getStatusCircleClass(currentStatus, targetStatus) {
+            const statusOrder = ['pending', 'confirmed', 'shipped', 'delivered'];
+            const currentIndex = statusOrder.indexOf(currentStatus);
+            const targetIndex = statusOrder.indexOf(targetStatus);
+            
+            if (currentStatus === 'cancelled') {
+                return 'cancelled';
+            }
+            
+            if (targetIndex < currentIndex) {
+                return 'completed';
+            } else if (targetIndex === currentIndex) {
+                return 'active';
+            } else {
+                return '';
+            }
+        }
+        
+        function notifyCustomerOrderUpdate(orderId, newStatus) {
+            const order = window.shop.orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            // Store update for real-time notification
+            const updatedOrders = JSON.parse(localStorage.getItem('lamiti-updated-orders') || '[]');
+            updatedOrders.push(order);
+            localStorage.setItem('lamiti-updated-orders', JSON.stringify(updatedOrders));
+            
+            // You would typically send an email or SMS here
+            console.log(`Notification sent to ${order.customer.email}: Order ${orderId} is now ${newStatus}`);
+        }
+        
+        function getStatusLabel(status) {
+            const labels = {
+                'pending': 'En attente',
+                'confirmed': 'Confirmée',
+                'shipped': 'Expédiée',
+                'delivered': 'Livrée',
+                'cancelled': 'Annulée'
+            };
+            return labels[status] || status;
+        }
+        
+        // Mobile sidebar toggle - MODIFIÉ POUR ANIMATION HAMBURGER
+        function toggleSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            const hamburger = document.getElementById('mobile-hamburger');
+            
+            sidebar.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        }
+        
+        // Initialize mobile views
+        function initMobileViews() {
+            if (window.innerWidth <= 768) {
+                // Load mobile views initially
+                setTimeout(() => {
+                    if (window.adminManager) {
+                        adminManager.loadMobileProducts();
+                        adminManager.loadMobileOrders();
+                        adminManager.loadMobileCustomers();
+                        adminManager.loadMobileLowStock();
+                    }
+                }, 500);
+            }
+        }
+        
+        // Show section with mobile support
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.dashboard-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').classList.add('active');
+            
+            // Update sidebar menu
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Find and activate the clicked link
+            const clickedLink = event?.target?.closest('.sidebar-link') || 
+                document.querySelector(`.sidebar-link[onclick*="${sectionName}"]`);
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
+            
+            // Close mobile sidebar if open
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('admin-sidebar');
+                const hamburger = document.getElementById('mobile-hamburger');
+                sidebar.classList.remove('active');
+                hamburger.classList.remove('active');
+            }
+            
+            // Load section content
+            switch(sectionName) {
+                case 'dashboard':
+                    if (window.adminManager) {
+                        adminManager.loadDashboardStats();
+                        adminManager.initializeCharts();
+                        adminManager.loadCustomerStats();
+                    }
+                    break;
+                case 'products':
+                    if (window.adminManager) {
+                        adminManager.loadAdminProducts();
+                        adminManager.loadMobileProducts();
+                    }
+                    break;
+                case 'categories':
+                    if (window.adminManager) {
+                        adminManager.loadAdminCategories();
+                    }
+                    break;
+                case 'orders':
+                    if (window.adminManager) {
+                        adminManager.loadAdminOrders();
+                        adminManager.loadMobileOrders();
+                    }
+                    break;
+                case 'customers':
+                    if (window.adminManager) {
+                        adminManager.loadAdminCustomers();
+                        adminManager.loadMobileCustomers();
+                        adminManager.loadCustomerStats();
+                    }
+                    break;
+                case 'analytics':
+                    loadDetailedAnalytics();
+                    break;
+                case 'low-stock':
+                    if (window.adminManager) {
+                        adminManager.loadLowStockProducts();
+                        adminManager.loadMobileLowStock();
+                    }
+                    break;
+            }
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth <= 768) {
+                // Load mobile views if needed
+                if (window.adminManager) {
+                    setTimeout(() => {
+                        adminManager.loadMobileProducts();
+                        adminManager.loadMobileOrders();
+                        adminManager.loadMobileCustomers();
+                        adminManager.loadMobileLowStock();
+                    }, 300);
+                }
+            }
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('admin-sidebar');
+            const hamburger = document.getElementById('mobile-hamburger');
+            
+            if (window.innerWidth <= 1024 && 
+                sidebar.classList.contains('active') && 
+                !sidebar.contains(event.target) && 
+                !hamburger.contains(event.target)) {
+                sidebar.classList.remove('active');
+                hamburger.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

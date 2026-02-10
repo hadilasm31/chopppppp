@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panier - LAMITI SHOP</title>
+    <meta name="description" content="Consultez votre panier et finalisez votre commande chez LAMITI SHOP.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Anime.js for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-init.js"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+        
+        :root {
+            --primary-color: #1a1a1a;
+            --secondary-color: #f5f5f5;
+            --accent-color: #d4af37;
+            --text-color: #333333;
+            --bg-color: #fafafa;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-top: 80px;
+        }
+        
+        /* Navigation Styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+        
+        .nav-link {
+            position: relative;
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+        
+        .nav-link:hover {
+            color: var(--accent-color);
+            background-color: rgba(212, 175, 55, 0.1);
+        }
+        
+        .nav-link.active {
+            color: var(--accent-color);
+            background-color: rgba(212, 175, 55, 0.1);
+        }
+        
+        .cart-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .cart-icon:hover {
+            background: #b8941f;
+            transform: scale(1.1);
+        }
+        
+        .cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        /* Cart Styles */
+        .cart-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .cart-container {
+                padding: 1rem;
+            }
+        }
+        
+        .cart-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .cart-title {
+            font-size: clamp(2rem, 5vw, 2.5rem);
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .cart-subtitle {
+            font-size: 1.1rem;
+            color: #666;
+        }
+        
+        .cart-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 3rem;
+            align-items: start;
+        }
+        
+        @media (max-width: 1024px) {
+            .cart-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+        
+        .cart-items {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        @media (max-width: 768px) {
+            .cart-items {
+                padding: 1.5rem;
+            }
+        }
+        
+        .cart-item {
+            display: grid;
+            grid-template-columns: 100px 1fr auto;
+            gap: 1.5rem;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+        
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .cart-item {
+                grid-template-columns: 80px 1fr;
+                gap: 1rem;
+                padding: 1rem 0;
+            }
+        }
+        
+        .cart-item-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .cart-item-image {
+                width: 80px;
+                height: 80px;
+            }
+        }
+        
+        .cart-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .cart-item-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .cart-item-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+        
+        .cart-item-options {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .cart-item-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+        
+        .cart-item-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .cart-item-actions {
+                grid-column: 1 / -1;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 1rem;
+            }
+        }
+        
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+        
+        .quantity-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .quantity-btn:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .quantity-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+            color: #999;
+        }
+        
+        .quantity-input {
+            width: 60px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .quantity-input:focus {
+            outline: none;
+        }
+        
+        .remove-item-btn {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .remove-item-btn:hover {
+            background: #fee;
+        }
+        
+        .cart-summary {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+        
+        @media (max-width: 1024px) {
+            .cart-summary {
+                position: static;
+            }
+        }
+        
+        .summary-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+        }
+        
+        .summary-row.total {
+            border-top: 2px solid #eee;
+            padding-top: 1rem;
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .checkout-btn {
+            width: 100%;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .checkout-btn:hover {
+            background: #b8941f;
+            transform: translateY(-1px);
+        }
+        
+        .checkout-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .checkout-btn:active {
+            transform: translateY(0);
+        }
+        
+        .continue-shopping {
+            display: block;
+            text-align: center;
+            color: var(--accent-color);
+            text-decoration: none;
+            margin-top: 1rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .continue-shopping:hover {
+            color: #b8941f;
+        }
+        
+        /* Empty Cart */
+        .empty-cart {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        
+        .empty-cart svg {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            opacity: 0.3;
+        }
+        
+        .empty-cart-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .empty-cart-text {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .shop-now-btn {
+            background: var(--accent-color);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .shop-now-btn:hover {
+            background: #b8941f;
+            transform: translateY(-1px);
+        }
+        
+        /* Checkout Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 1rem;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        
+        @media (max-width: 768px) {
+            .modal-content {
+                padding: 1.5rem;
+                max-height: 95vh;
+            }
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            background: #f5f5f5;
+            color: var(--primary-color);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .payment-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .payment-method {
+            padding: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .payment-method:hover {
+            border-color: var(--accent-color);
+        }
+        
+        .payment-method.selected {
+            border-color: var(--accent-color);
+            background: rgba(212, 175, 55, 0.1);
+        }
+        
+        .payment-method-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Order Confirmation */
+        .order-confirmation {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .order-confirmation h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .order-details {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .order-details h3 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .order-details .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .order-details .detail-row:last-child {
+            margin-bottom: 0;
+            font-weight: 600;
+            border-top: 1px solid #ddd;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .tracking-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 12px;
+        }
+        
+        .tracking-code {
+            font-family: monospace;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            background: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 0.5rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tracking-code:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .tracking-note {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 1rem;
+        }
+        
+        /* Hamburger Button - AJOUTÉ */
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 30px;
+            height: 21px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .hamburger-line {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: #10B981; /* Vert par défaut */
+            border-radius: 3px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
+        }
+        
+        /* État ouvert - transforme en X rouge */
+        .hamburger.open .hamburger-line:nth-child(1) {
+            transform: translateY(9px) rotate(45deg);
+            background-color: #EF4444; /* Rouge pour X */
+        }
+        
+        .hamburger.open .hamburger-line:nth-child(2) {
+            opacity: 0;
+            transform: scale(0);
+        }
+        
+        .hamburger.open .hamburger-line:nth-child(3) {
+            transform: translateY(-9px) rotate(-45deg);
+            background-color: #EF4444; /* Rouge pour X */
+        }
+        
+        /* Animation au hover */
+        .hamburger:hover .hamburger-line {
+            opacity: 0.8;
+        }
+        
+        .hamburger:active .hamburger-line {
+            opacity: 0.6;
+        }
+        
+        /* Mobile Menu */
+        .mobile-menu-btn {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .desktop-nav {
+                display: none;
+            }
+        }
+        
+        .mobile-menu {
+            transition: all 0.3s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .mobile-menu.active {
+            max-height: 300px;
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 2000;
+            max-width: 350px;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification-content {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .notification-success {
+            border-left: 4px solid #27ae60;
+        }
+        
+        .notification-error {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .notification-info {
+            border-left: 4px solid #3498db;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            margin-left: auto;
+        }
+        
+        /* Real-time Updates */
+        .realtime-update {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(100px);
+            transition: transform 0.3s ease;
+            z-index: 2000;
+            max-width: 350px;
+            cursor: pointer;
+        }
+        
+        .realtime-update.show {
+            transform: translateY(0);
+        }
+        
+        .realtime-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .realtime-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: white;
+            padding: 0;
+            margin-left: auto;
+        }
+        
+        /* Order Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-shipped {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-delivered {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <a href="index.html" class="logo">
+                    LAMITI SHOP
+                </a>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-4 desktop-nav">
+                    <a href="index.html" class="nav-link">Accueil</a>
+                    <a href="products.html" class="nav-link">Produits</a>
+                    <a href="index.html#categories" class="nav-link">Catégories</a>
+                    <a href="track-order.html" class="nav-link">Suivi commande</a>
+                    
+                    <!-- Cart Icon -->
+                    <a href="cart.html" class="cart-icon">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9m-9 0h9"></path>
+                        </svg>
+                        <span class="cart-badge" style="display: none;">0</span>
+                    </a>
+                </div>
+                
+                <!-- Hamburger Menu Button -->
+                <button class="hamburger md:hidden" onclick="toggleMobileMenu()" aria-label="Menu mobile" id="hamburger-btn">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+            </div>
+            
+            <!-- Mobile Menu -->
+            <div class="mobile-menu md:hidden" id="mobile-menu">
+                <div class="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
+                    <a href="index.html" class="block px-3 py-2 nav-link">Accueil</a>
+                    <a href="products.html" class="block px-3 py-2 nav-link">Produits</a>
+                    <a href="index.html#categories" class="block px-3 py-2 nav-link">Catégories</a>
+                    <a href="track-order.html" class="block px-3 py-2 nav-link">Suivi commande</a>
+                    
+                    <!-- Mobile Cart -->
+                    <a href="cart.html" class="block px-3 py-2 nav-link">
+                        <div class="flex items-center justify-between">
+                            <span>Panier</span>
+                            <span class="cart-badge" style="display: none;">0</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="cart-container">
+        <!-- Cart Header -->
+        <div class="cart-header">
+            <h1 class="cart-title">Votre Panier</h1>
+            <p class="cart-subtitle">Finalisez votre commande en toute sécurité</p>
+        </div>
+
+        <!-- Cart Content -->
+        <div id="cart-content">
+            <!-- Content will be loaded by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Checkout Modal -->
+    <div class="modal-overlay" id="checkout-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Finaliser la commande</h2>
+                <button class="modal-close" onclick="closeCheckoutModal()">&times;</button>
+            </div>
+            
+            <form id="checkout-form" onsubmit="handleCheckout(event)">
+                <!-- Customer Information -->
+                <div class="form-group">
+                    <h3 class="form-label">Informations personnelles</h3>
+                    <div class="form-row">
+                        <div>
+                            <label class="form-label">Prénom</label>
+                            <input type="text" class="form-input" name="firstName" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Nom</label>
+                            <input type="text" class="form-input" name="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Téléphone</label>
+                        <input type="tel" class="form-input" name="phone" required>
+                    </div>
+                </div>
+                
+                <!-- Shipping Address -->
+                <div class="form-group">
+                    <h3 class="form-label">Adresse de livraison</h3>
+                    <div class="form-group">
+                        <label class="form-label">Adresse</label>
+                        <input type="text" class="form-input" name="address" required>
+                    </div>
+                    <div class="form-row">
+                        <div>
+                            <label class="form-label">Ville</label>
+                            <input type="text" class="form-input" name="city" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Code postal</label>
+                            <input type="text" class="form-input" name="zipCode" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pays</label>
+                        <select class="form-input" name="country" required>
+                            <option value="">Sélectionner un pays</option>
+                            <option value="GA">Gabon</option>
+                            <option value="CM">Cameroun</option>
+                            <option value="CG">Congo</option>
+                            <option value="CF">République Centrafricaine</option>
+                            <option value="SN">Sénégal</option>
+                            <option value="CI">Côte d'Ivoire</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Payment Method -->
+                <div class="form-group">
+                    <h3 class="form-label">Mode de paiement</h3>
+                    <div class="payment-methods">
+                        <div class="payment-method" onclick="selectPaymentMethod('card')">
+                            <div class="payment-method-icon">💳</div>
+                            <div>Carte bancaire</div>
+                            <div class="text-sm text-gray-600 mt-1">Paiement sécurisé</div>
+                        </div>
+                        <div class="payment-method" onclick="selectPaymentMethod('mobile')">
+                            <div class="payment-method-icon">📱</div>
+                            <div>Paiement mobile</div>
+                            <div class="text-sm text-gray-600 mt-1">Orange Money, MTN Money</div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="paymentMethod" id="selected-payment-method" required>
+                </div>
+                
+                <!-- Order Notes -->
+                <div class="form-group">
+                    <label class="form-label">Notes pour la commande (optionnel)</label>
+                    <textarea class="form-input form-textarea" name="notes" placeholder="Instructions spéciales, préférences de livraison..."></textarea>
+                </div>
+                
+                <!-- Terms Agreement -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" name="terms" required>
+                        J'accepte les <a href="#" class="text-accent-color hover:underline">conditions générales de vente</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="checkout-btn">Confirmer la commande</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Real-time Update Notification -->
+    <div class="realtime-update" id="realtime-update" onclick="goToTracking()">
+        <div class="realtime-content">
+            <span>📦 Mise à jour de commande disponible</span>
+            <button class="realtime-close" onclick="hideRealtimeUpdate(event)">&times;</button>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="main.js"></script>
+    
+    <script>
+        let selectedPaymentMethod = null;
+        let currentOrder = null;
+        let realtimeUpdateInterval = null;
+        let lastOrderCheck = Date.now();
+        
+        // Initialize cart page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCartPage();
+            
+            // Listen for cart updates
+            document.addEventListener('shopDataUpdate', function() {
+                loadCartPage();
+            });
+            
+            // Listen for order status updates
+            document.addEventListener('orderStatusUpdated', function(e) {
+                showRealtimeUpdate(e.detail);
+            });
+            
+            // Check for existing orders updates
+            startOrderUpdatesCheck();
+        });
+        
+        function loadCartPage() {
+            if (!window.shop) {
+                setTimeout(loadCartPage, 100);
+                return;
+            }
+            
+            const cartContent = document.getElementById('cart-content');
+            
+            if (window.shop.cart.length === 0) {
+                cartContent.innerHTML = `
+                    <div class="empty-cart">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9m-9 0h9"></path>
+                        </svg>
+                        <h2 class="empty-cart-title">Votre panier est vide</h2>
+                        <p class="empty-cart-text">Découvrez nos produits et ajoutez-les à votre panier</p>
+                        <a href="products.html" class="shop-now-btn">Commencer vos achats</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            cartContent.innerHTML = `
+                <div class="cart-content">
+                    <div class="cart-items">
+                        <h2 class="text-xl font-semibold mb-4">Articles (${window.shop.cart.reduce((sum, item) => sum + item.quantity, 0)})</h2>
+                        ${window.shop.cart.map(item => {
+                            const product = window.shop.products.find(p => p.id === item.productId);
+                            if (!product) return '';
+                            
+                            return `
+                                <div class="cart-item" data-item-id="${item.productId}">
+                                    <div class="cart-item-image">
+                                        <img src="${product.images[0]}" alt="${product.name}" loading="lazy">
+                                    </div>
+                                    <div class="cart-item-details">
+                                        <h3 class="cart-item-name">${product.name}</h3>
+                                        <div class="cart-item-options">
+                                            ${item.size ? `<span class="mr-3">Taille: ${item.size}</span>` : ''}
+                                            ${item.color ? `<span>Couleur: ${item.color}</span>` : ''}
+                                        </div>
+                                        <div class="cart-item-price">${window.shop.formatPrice(product.price)}</div>
+                                    </div>
+                                    <div class="cart-item-actions">
+                                        <div class="quantity-controls">
+                                            <button class="quantity-btn" onclick="updateQuantity('${item.productId}', ${item.quantity - 1}, '${item.size}', '${item.color}')" ${item.quantity <= 1 ? 'disabled' : ''}>
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                                </svg>
+                                            </button>
+                                            <input type="number" class="quantity-input" value="${item.quantity}" min="1" max="${product.stock}" onchange="updateQuantity('${item.productId}', this.value, '${item.size}', '${item.color}')">
+                                            <button class="quantity-btn" onclick="updateQuantity('${item.productId}', ${item.quantity + 1}, '${item.size}', '${item.color}')" ${item.quantity >= product.stock ? 'disabled' : ''}>
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <button class="remove-item-btn" onclick="removeItem('${item.productId}', '${item.size}', '${item.color}')">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            <span class="hidden md:inline">Supprimer</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    
+                    <div class="cart-summary">
+                        <h2 class="summary-title">Résumé de la commande</h2>
+                        <div class="summary-row">
+                            <span>Sous-total</span>
+                            <span id="subtotal">${window.shop.formatPrice(window.shop.calculateTotal())}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Livraison</span>
+                            <span id="shipping">Gratuite</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Taxes (18%)</span>
+                            <span id="taxes">${window.shop.formatPrice(window.shop.calculateTotal() * 0.18)}</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total</span>
+                            <span id="total">${window.shop.formatPrice(window.shop.calculateTotal() * 1.18)}</span>
+                        </div>
+                        
+                        <div class="mt-4 mb-2 text-sm text-gray-600">
+                            <p>✓ Livraison gratuite sur toutes les commandes</p>
+                            <p>✓ Paiement 100% sécurisé</p>
+                            <p>✓ Retours gratuits sous 30 jours</p>
+                        </div>
+                        
+                        <button class="checkout-btn" onclick="openCheckoutModal()" ${window.shop.cart.length === 0 ? 'disabled' : ''}>
+                            Procéder au paiement
+                        </button>
+                        <a href="products.html" class="continue-shopping">Continuer mes achats</a>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function updateQuantity(productId, newQuantity, size, color) {
+            const quantity = parseInt(newQuantity);
+            
+            if (quantity <= 0) {
+                removeItem(productId, size, color);
+                return;
+            }
+            
+            const product = window.shop.products.find(p => p.id === productId);
+            if (product && quantity > product.stock) {
+                window.shop.showNotification('Stock insuffisant!', 'error');
+                return;
+            }
+            
+            window.shop.updateCartQuantity(productId, quantity, size, color);
+            loadCartPage();
+        }
+        
+        function removeItem(productId, size, color) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) {
+                window.shop.removeFromCart(productId, size, color);
+                loadCartPage();
+            }
+        }
+        
+        function openCheckoutModal() {
+            if (window.shop.cart.length === 0) {
+                window.shop.showNotification('Votre panier est vide!', 'error');
+                return;
+            }
+            
+            const modal = document.getElementById('checkout-modal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeCheckoutModal() {
+            const modal = document.getElementById('checkout-modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // Reset form
+            document.getElementById('checkout-form').reset();
+            selectedPaymentMethod = null;
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('selected');
+            });
+        }
+        
+        function selectPaymentMethod(method) {
+            selectedPaymentMethod = method;
+            
+            // Update UI
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            event.currentTarget.classList.add('selected');
+            
+            // Update hidden input
+            document.getElementById('selected-payment-method').value = method;
+        }
+        
+        function handleCheckout(event) {
+            event.preventDefault();
+            
+            if (!selectedPaymentMethod) {
+                window.shop.showNotification('Veuillez sélectionner un mode de paiement', 'error');
+                return;
+            }
+            
+            const formData = new FormData(event.target);
+            const customerInfo = {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                email: formData.get('email'),
+                phone: formData.get('phone')
+            };
+            
+            const shippingAddress = {
+                address: formData.get('address'),
+                city: formData.get('city'),
+                zipCode: formData.get('zipCode'),
+                country: formData.get('country')
+            };
+            
+            const paymentMethod = formData.get('paymentMethod');
+            const notes = formData.get('notes');
+            
+            // Show loading state
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.innerHTML = '<span class="loading"></span> Traitement...';
+            submitBtn.disabled = true;
+            
+            // Simulate order processing
+            setTimeout(() => {
+                const order = window.shop.createOrder(customerInfo, shippingAddress, paymentMethod);
+                
+                if (order) {
+                    // Add notes to order if provided
+                    if (notes) {
+                        order.notes = notes;
+                        window.shop.saveOrders();
+                    }
+                    
+                    currentOrder = order;
+                    closeCheckoutModal();
+                    showOrderConfirmation(order);
+                    
+                    // Store customer session
+                    window.shop.currentUser = {
+                        email: customerInfo.email,
+                        firstName: customerInfo.firstName,
+                        lastName: customerInfo.lastName
+                    };
+                    localStorage.setItem('lamiti-user', JSON.stringify(window.shop.currentUser));
+                } else {
+                    window.shop.showNotification('Erreur lors de la création de la commande', 'error');
+                }
+                
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }, 2000);
+        }
+        
+        function showOrderConfirmation(order) {
+            const confirmationHTML = `
+                <div class="order-confirmation">
+                    <div class="text-6xl mb-4">🎉</div>
+                    <h2>Commande confirmée!</h2>
+                    <p class="empty-cart-text">Votre commande a été confirmée avec succès. Vous recevrez un email de confirmation sous peu.</p>
+                    
+                    <div class="order-details">
+                        <h3>Détails de la commande</h3>
+                        <div class="detail-row">
+                            <span>Numéro de commande:</span>
+                            <span>${order.id}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Total:</span>
+                            <span>${window.shop.formatPrice(order.total)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Mode de paiement:</span>
+                            <span>${order.paymentMethod === 'card' ? 'Carte bancaire' : 'Paiement mobile'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Statut:</span>
+                            <span class="status-badge status-${order.status}">
+                                ${window.shop.getStatusLabel(order.status)}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="tracking-section">
+                        <h3>Suivi de commande</h3>
+                        <p>Utilisez ce code pour suivre votre commande:</p>
+                        <div class="tracking-code" onclick="copyTrackingCode('${order.trackingCode}')">
+                            ${order.trackingCode}
+                        </div>
+                        <p class="tracking-note">
+                            Livraison estimée: ${new Date(order.estimatedDelivery).toLocaleDateString('fr-FR')}
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <button onclick="window.location.href='track-order.html?code=${order.trackingCode}'" class="shop-now-btn w-full">
+                            📦 Suivre ma commande en temps réel
+                        </button>
+                        <button onclick="printOrderDetails('${order.id}')" class="shop-now-btn w-full bg-gray-700 hover:bg-gray-800">
+                            🖨️ Imprimer les détails
+                        </button>
+                        <a href="products.html" class="block text-center text-gray-600 hover:text-gray-800 transition-colors">
+                            ← Retour à la boutique
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('cart-content').innerHTML = confirmationHTML;
+            
+            // Animate success
+            if (typeof anime !== 'undefined') {
+                anime({
+                    targets: '.order-confirmation > *',
+                    translateY: [30, 0],
+                    opacity: [0, 1],
+                    duration: 800,
+                    delay: anime.stagger(200),
+                    easing: 'easeOutExpo'
+                });
+            }
+            
+            // Start checking for order updates
+            startOrderTracking(order.id);
+        }
+        
+        function copyTrackingCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                window.shop.showNotification('Code copié dans le presse-papier!', 'success');
+            }).catch(err => {
+                console.error('Erreur de copie:', err);
+            });
+        }
+        
+        function printOrderDetails(orderId) {
+            const order = window.shop.orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const printContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Confirmation de commande - LAMITI SHOP</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .logo { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: bold; color: #1a1a1a; }
+                        .order-info { margin-bottom: 20px; }
+                        .section { margin-bottom: 25px; }
+                        .section-title { font-weight: bold; border-bottom: 2px solid #d4af37; padding-bottom: 5px; margin-bottom: 10px; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+                        .items-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        .items-table th, .items-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+                        .total-row { font-weight: bold; border-top: 2px solid #000; }
+                        .footer { margin-top: 30px; text-align: center; font-size: 0.9rem; color: #666; }
+                        .tracking-code { font-family: monospace; font-weight: bold; color: #d4af37; }
+                        @media print {
+                            .no-print { display: none; }
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+                        <button onclick="window.print()" style="padding: 10px 20px; background: #d4af37; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Imprimer
+                        </button>
+                        <button onclick="window.close()" style="padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+                            Fermer
+                        </button>
+                    </div>
+                    
+                    <div class="header">
+                        <div class="logo">LAMITI SHOP</div>
+                        <h1>Confirmation de commande</h1>
+                    </div>
+                    
+                    <div class="order-info">
+                        <div class="info-grid">
+                            <div>
+                                <strong>Numéro de commande:</strong><br>
+                                ${order.id}
+                            </div>
+                            <div>
+                                <strong>Date:</strong><br>
+                                ${new Date(order.orderDate).toLocaleDateString('fr-FR')}
+                            </div>
+                            <div>
+                                <strong>Code de suivi:</strong><br>
+                                <span class="tracking-code">${order.trackingCode}</span>
+                            </div>
+                            <div>
+                                <strong>Statut:</strong><br>
+                                ${window.shop.getStatusLabel(order.status)}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-title">Informations client</div>
+                        <div class="info-grid">
+                            <div>
+                                <strong>Nom:</strong><br>
+                                ${order.customer.firstName} ${order.customer.lastName}
+                            </div>
+                            <div>
+                                <strong>Contact:</strong><br>
+                                ${order.customer.email}<br>
+                                ${order.customer.phone}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-title">Adresse de livraison</div>
+                        <p>${order.shippingAddress.address}</p>
+                        <p>${order.shippingAddress.city}, ${order.shippingAddress.zipCode}</p>
+                        <p>${order.shippingAddress.country}</p>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-title">Articles commandés</div>
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Article</th>
+                                    <th>Quantité</th>
+                                    <th>Prix unitaire</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${order.items.map(item => {
+                                    const product = window.shop.products.find(p => p.id === item.productId);
+                                    return `
+                                        <tr>
+                                            <td>${product ? product.name : 'Produit'}</td>
+                                            <td>${item.quantity}</td>
+                                            <td>${window.shop.formatPrice(product ? product.price : 0)}</td>
+                                            <td>${window.shop.formatPrice(product ? product.price * item.quantity : 0)}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                <tr class="total-row">
+                                    <td colspan="3">Sous-total</td>
+                                    <td>${window.shop.formatPrice(order.total)}</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td colspan="3">Taxes (18%)</td>
+                                    <td>${window.shop.formatPrice(order.total * 0.18)}</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td colspan="3">Total</td>
+                                    <td>${window.shop.formatPrice(order.total * 1.18)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-title">Informations de paiement</div>
+                        <p><strong>Mode de paiement:</strong> ${order.paymentMethod === 'card' ? 'Carte bancaire' : 'Paiement mobile'}</p>
+                        <p><strong>Livraison estimée:</strong> ${new Date(order.estimatedDelivery).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Merci pour votre commande !</p>
+                        <p>Suivez votre commande en ligne: https://lamiti-shop.com/track-order.html?code=${order.trackingCode}</p>
+                        <p>Contact: hadilasmakadji31@gmail.com | +241 77 95 03 88</p>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+        }
+        
+        function trackOrder(trackingCode) {
+            if (window.shop) {
+                const order = window.shop.getOrderByTrackingCode(trackingCode);
+                if (order) {
+                    let statusMessage = '';
+                    let statusEmoji = '';
+                    
+                    switch (order.status) {
+                        case 'pending':
+                            statusMessage = 'Votre commande est en cours de traitement.';
+                            statusEmoji = '⏳';
+                            break;
+                        case 'confirmed':
+                            statusMessage = 'Votre commande a été confirmée et est en préparation.';
+                            statusEmoji = '✅';
+                            break;
+                        case 'shipped':
+                            statusMessage = 'Votre commande a été expédiée et est en cours de livraison.';
+                            statusEmoji = '🚚';
+                            break;
+                        case 'delivered':
+                            statusMessage = 'Votre commande a été livrée avec succès!';
+                            statusEmoji = '🎉';
+                            break;
+                        case 'cancelled':
+                            statusMessage = 'Votre commande a été annulée.';
+                            statusEmoji = '❌';
+                            break;
+                        default:
+                            statusMessage = 'Statut de commande inconnu.';
+                            statusEmoji = '❓';
+                    }
+                    
+                    window.shop.showNotification(`${statusEmoji} ${statusMessage}`, 'info');
+                    
+                    // Redirect to tracking page
+                    window.location.href = `track-order.html?code=${trackingCode}`;
+                } else {
+                    window.shop.showNotification('Commande introuvable.', 'error');
+                }
+            }
+        }
+        
+        function startOrderTracking(orderId) {
+            // Check for updates every 30 seconds
+            realtimeUpdateInterval = setInterval(() => {
+                checkOrderUpdate(orderId);
+            }, 30000);
+        }
+        
+        function checkOrderUpdate(orderId) {
+            if (!window.shop) return;
+            
+            const order = window.shop.orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            // Check for new status updates
+            if (order.updates && order.updates.length > 0) {
+                const lastSeenUpdate = localStorage.getItem(`lamiti-last-update-${orderId}`) || 0;
+                const newUpdates = order.updates.filter(update => 
+                    new Date(update.timestamp).getTime() > lastSeenUpdate
+                );
+                
+                if (newUpdates.length > 0) {
+                    // Show real-time update notification
+                    const latestUpdate = newUpdates[newUpdates.length - 1];
+                    showRealtimeUpdate({
+                        orderId: orderId,
+                        newStatus: latestUpdate.newStatus,
+                        message: latestUpdate.message
+                    });
+                    
+                    // Update last seen
+                    localStorage.setItem(`lamiti-last-update-${orderId}`, 
+                        new Date(latestUpdate.timestamp).getTime());
+                }
+            }
+        }
+        
+        function startOrderUpdatesCheck() {
+            // Check for all customer orders updates every minute
+            setInterval(() => {
+                checkAllOrderUpdates();
+            }, 60000);
+            
+            // Initial check
+            setTimeout(() => {
+                checkAllOrderUpdates();
+            }, 5000);
+        }
+        
+        function checkAllOrderUpdates() {
+            if (!window.shop) return;
+            
+            const customerEmail = window.shop.currentUser?.email;
+            if (!customerEmail) return;
+            
+            const customerOrders = window.shop.getCustomerOrders(customerEmail);
+            
+            customerOrders.forEach(order => {
+                if (order.updates && order.updates.length > 0) {
+                    const lastSeenUpdate = localStorage.getItem(`lamiti-last-update-${order.id}`) || 0;
+                    const newUpdates = order.updates.filter(update => 
+                        new Date(update.timestamp).getTime() > lastSeenUpdate
+                    );
+                    
+                    if (newUpdates.length > 0) {
+                        const latestUpdate = newUpdates[newUpdates.length - 1];
+                        showRealtimeUpdate({
+                            orderId: order.id,
+                            newStatus: latestUpdate.newStatus,
+                            message: latestUpdate.message
+                        });
+                    }
+                }
+            });
+        }
+        
+        function showRealtimeUpdate(update) {
+            const updateElement = document.getElementById('realtime-update');
+            if (updateElement) {
+                updateElement.querySelector('span').textContent = `📦 ${update.message}`;
+                updateElement.classList.add('show');
+                
+                // Auto-hide after 10 seconds
+                setTimeout(() => {
+                    hideRealtimeUpdate();
+                }, 10000);
+            }
+        }
+        
+        function hideRealtimeUpdate(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            const updateElement = document.getElementById('realtime-update');
+            if (updateElement) {
+                updateElement.classList.remove('show');
+            }
+        }
+        
+        function goToTracking() {
+            const updateElement = document.getElementById('realtime-update');
+            const text = updateElement.querySelector('span').textContent;
+            
+            // Extract order ID from message
+            const orderIdMatch = text.match(/commande\s+([A-Z0-9-]+)/i);
+            if (orderIdMatch && orderIdMatch[1]) {
+                const orderId = orderIdMatch[1];
+                const order = window.shop.orders.find(o => o.id === orderId);
+                if (order) {
+                    window.location.href = `track-order.html?code=${order.trackingCode}`;
+                }
+            } else {
+                window.location.href = 'track-order.html';
+            }
+            
+            hideRealtimeUpdate();
+        }
+        
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            const hamburgerBtn = document.getElementById('hamburger-btn');
+            
+            mobileMenu.classList.toggle('active');
+            hamburgerBtn.classList.toggle('open');
+            
+            // Fermer le menu si on clique sur un lien
+            if (mobileMenu.classList.contains('active')) {
+                mobileMenu.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        mobileMenu.classList.remove('active');
+                        hamburgerBtn.classList.remove('open');
+                    });
+                });
+            }
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                closeCheckoutModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCheckoutModal();
+            }
+        });
+        
+        // Auto-save cart when page unloads
+        window.addEventListener('beforeunload', function() {
+            if (window.shop) {
+                window.shop.saveCart();
+            }
+            
+            if (realtimeUpdateInterval) {
+                clearInterval(realtimeUpdateInterval);
+            }
+        });
+    </script>
+</body>
+</html>
